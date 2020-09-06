@@ -7,6 +7,9 @@ branches:
   only:
     - master # build master branch only
 script:
+  - cd themes/obsidian
+  - npm install 
+  - cd ../
   - hexo generate # generate static files
 deploy:
   provider: pages
