@@ -6,11 +6,7 @@ cache: npm
 branches:
   only:
     - master # build master branch only
-install:
-  - npm install  #安装hexo及插件
 script:
-  - cd themes/obsidian
-  - npm install 
   - hexo generate # generate static files
 deploy:
   provider: pages
