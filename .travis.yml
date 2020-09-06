@@ -10,6 +10,7 @@ script:
   - cd themes/obsidian
   - npm install 
   - cd ../
+  - npm install
   - hexo generate # generate static files
 deploy:
   provider: pages
