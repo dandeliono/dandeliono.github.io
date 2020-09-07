@@ -54,9 +54,9 @@ page_titles:
 
 # Social media links
 socials:
-  github: 'https://github.com/TriDiamond'
-  twitter: 'https://twitter.com/TriDiamond6'
-  stackoverflow: 'https://stackoverflow.com/users/7602324/tridiamond?tab=profile'
+  github: 'https://github.com/dandeliono'
+  # twitter: 'https://twitter.com/TriDiamond6'
+  # stackoverflow: 'https://stackoverflow.com/users/7602324/tridiamond?tab=profile'
 
 # Enable table of content
 TOC: true
@@ -74,14 +74,14 @@ avatar: https://res.cloudinary.com/tridiamond/image/upload/v1573019751/TriDiamon
 scrollbar: true
 
 # Website keywords used for SEO
-keywords: TriDiamond Obsidian
+keywords: 许光胜
 
 # Website slogans
-descriptionOne: 'Think like an artist, develop like an artisan'
-descriptionTwo: '艺术家思维去思考问题，工匠创造精神去开发'
+descriptionOne: 'Always believe that something wonderful is about to  happen.'
+descriptionTwo: '永远相信美好的事情即将发生'
 
 # If you use google analytics, please fill in the ID
-# google_analytics: 'UA-149874671-1'
+google_analytics: 'UA-177342664-1'
 
 # Website favicon
 favicon: /img/favicon.png
@@ -107,7 +107,7 @@ mp3:
 # Gitalk comment plugin
 # see https://github.com/gitalk/gitalk
 gitalk:
-  enable: true
+  enable: false
   autoExpand: true
   clientID: 'ec894e2b66f752e8b7fb'
   clientSecret: '3ccc2e92bb350688fe2c2dc2930189b62622bfb1'
