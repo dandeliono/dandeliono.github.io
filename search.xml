@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>regex</title>
+      <link href="/2020/09/07/regex/"/>
+      <url>/2020/09/07/regex/</url>
+      
+        <content type="html"><![CDATA[<p>匹配中文:</p><pre><code>[\u4e00-\u9fa5]</code></pre><p>英文字母:</p><pre><code>[a-zA-Z]</code></pre><p>数字:</p><pre><code>[0-9]</code></pre><p>匹配中文，英文字母和数字及_:</p><pre><code>^[\u4e00-\u9fa5_a-zA-Z0-9]+$</code></pre><p>同时判断输入长度：</p><pre><code>[\u4e00-\u9fa5_a-zA-Z0-9_]&#123;4,10&#125;</code></pre><pre><code>^[\w\u4E00-\u9FA5\uF900-\uFA2D]*$</code></pre><ol><li><p>一个正则表达式，只含有汉字、数字、字母、下划线不能以下划线开头和结尾：</p><pre><code>^(?!_)(?!.*?_$)[a-zA-Z0-9_\u4e00-\u9fa5]+$</code></pre><p>其中：</p><pre><code>^与字符串开始的地方匹配(?!_)　　不能以_开头(?!.*?_$)　　不能以_结尾[a-zA-Z0-9_\u4e00-\u9fa5]+　　至少一个汉字、数字、字母、下划线$　　与字符串结束的地方匹配</code></pre><p>放在程序里前面加@，否则需要\进行转义 </p><pre><code>&quot;^(?!_)(?!.*?_$)[a-zA-Z0-9_\u4e00-\u9fa5]+$&quot;</code></pre><p>或者：<code>&quot;^(?!_)\w*(? </code></p></li><li><p>只含有汉字、数字、字母、下划线，下划线位置不限：</p><pre><code>^[a-zA-Z0-9_\u4e00-\u9fa5]+$</code></pre></li><li><p>由数字、26个英文字母或者下划线组成的字符串</p><pre><code>^\w+$</code></pre></li><li><p>2~4个汉字</p><pre><code>&quot;^[\u4E00-\u9FA5]&#123;2,4&#125;$&quot;;</code></pre></li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> 日常 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 正则 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Hello World</title>
       <link href="/2020/09/07/hello-world/"/>
       <url>/2020/09/07/hello-world/</url>
