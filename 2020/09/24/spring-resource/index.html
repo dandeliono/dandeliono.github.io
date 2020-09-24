@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>spring-resource - 个人笔记</title>
+    <title>spring-resource注解 - 个人笔记</title>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="google" content="notranslate" />
@@ -57,7 +57,7 @@
     <div class="navigation animated fadeIn fast delay-1s">
         <img id="home-icon" class="icon-home" src="/img/favicon.ico" alt="" data-url="https://dandeliono.github.io">
         <div id="play-icon" title="Play/Pause" class="iconfont icon-play"></div>
-        <h3 class="subtitle">spring-resource</h3>
+        <h3 class="subtitle">spring-resource注解</h3>
         <div class="social">
             <!--        <div class="like-icon">-->
             <!--            <a href="javascript:;" class="likeThis active"><span class="icon-like"></span><span class="count">76</span></a>-->
@@ -92,7 +92,7 @@
                 
                 九月 24, 2020
             </p>
-            <h3 class="post-title animated fadeInDown"><a href="/2020/09/24/spring-resource/" title="spring-resource" class="">spring-resource</a>
+            <h3 class="post-title animated fadeInDown"><a href="/2020/09/24/spring-resource/" title="spring-resource注解" class="">spring-resource注解</a>
             </h3>
             
             <p class="post-count animated fadeInDown">
@@ -146,11 +146,14 @@
 <li><p>@Autowired默认按类型装配（这个注解是属于spring的），默认情况下必须要求依赖对象必须存在，如果要允许null值，可以设置它的required属性为false，如：@Autowired(required=false) ，如果我们想使用名称装配可以结合@Qualifier注解进行使用，如下：</p>
 </li>
 </ol>
-<pre><code class="java">@Autowired()@Qualifier(&quot;baseDao&quot;)privateBaseDao baseDao;</code></pre>
+<pre><code class="java">@Autowired()
+@Qualifier(&quot;baseDao&quot;)
+privateBaseDao baseDao;</code></pre>
 <ol start="3">
 <li>@Resource（这个注解属于J2EE的），默认按照名称进行装配，名称可以通过name属性进行指定，如果没有指定name属性，当注解写在字段上时，默认取字段名进行安装名称查找，如果注解写在setter方法上默认取属性名进行装配。当找不到与名称匹配的bean时才按照类型进行装配。但是需要注意的是，如果name属性一旦指定，就只会按照名称进行装配。</li>
 </ol>
-<pre><code class="java">@Resource(name=&quot;baseDao&quot;)privateBaseDao baseDao;</code></pre>
+<pre><code class="java">@Resource(name=&quot;baseDao&quot;)
+privateBaseDao baseDao;</code></pre>
 <p><strong>@Resource装配顺序</strong>  </p>
 <ol>
 <li>如果同时指定了name和type，则从Spring上下文中找到唯一匹配的bean进行装配，找不到则抛出异常  </li>
