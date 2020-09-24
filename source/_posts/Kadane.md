@@ -1,5 +1,5 @@
 ---
-title: Kadane
+title: Kadane算法
 date: 2020-09-22 22:01:24
 tags: 动态规划
 categories: 算法
