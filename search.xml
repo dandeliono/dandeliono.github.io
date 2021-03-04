@@ -5,8 +5,8 @@
     
     <entry>
       <title>Hello World</title>
-      <link href="/2021/03/02/hello-world/"/>
-      <url>/2021/03/02/hello-world/</url>
+      <link href="2021/03/04/hello-world/"/>
+      <url>2021/03/04/hello-world/</url>
       
         <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><pre><code class="bash">$ hexo new &quot;My New Post&quot;</code></pre><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><pre><code class="bash">$ hexo server</code></pre><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><pre><code class="bash">$ hexo generate</code></pre><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><pre><code class="bash">$ hexo deploy</code></pre><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
       
@@ -17,9 +17,36 @@
     
     
     <entry>
+      <title>Java集合</title>
+      <link href="2021/01/11/interview-java-collection/"/>
+      <url>2021/01/11/interview-java-collection/</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+      
+      <categories>
+          
+          <category> 面试 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> java </tag>
+            
+            <tag> 集合 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>spring-resource注解</title>
-      <link href="/2020/09/24/spring-resource/"/>
-      <url>/2020/09/24/spring-resource/</url>
+      <link href="2020/09/24/spring-resource/"/>
+      <url>2020/09/24/spring-resource/</url>
       
         <content type="html"><![CDATA[<p>Spring不但支持自己定义的@Autowired注解，还支持几个由<strong>JSR-250</strong>规范定义的注解，它们分别是@Resource、@PostConstruct以及@PreDestroy。这里只说@Autowired和@Resource注解的区别。</p><ol><li><p>@Autowired与@Resource都可以用来装配bean. 都可以写在字段上,或写在setter方法上。</p></li><li><p>@Autowired默认按类型装配（这个注解是属于spring的），默认情况下必须要求依赖对象必须存在，如果要允许null值，可以设置它的required属性为false，如：@Autowired(required=false) ，如果我们想使用名称装配可以结合@Qualifier注解进行使用，如下：</p></li></ol><pre><code class="java">@Autowired()@Qualifier(&quot;baseDao&quot;)privateBaseDao baseDao;</code></pre><ol start="3"><li>@Resource（这个注解属于J2EE的），默认按照名称进行装配，名称可以通过name属性进行指定，如果没有指定name属性，当注解写在字段上时，默认取字段名进行安装名称查找，如果注解写在setter方法上默认取属性名进行装配。当找不到与名称匹配的bean时才按照类型进行装配。但是需要注意的是，如果name属性一旦指定，就只会按照名称进行装配。</li></ol><pre><code class="java">@Resource(name=&quot;baseDao&quot;)privateBaseDao baseDao;</code></pre><p><strong>@Resource装配顺序</strong>  </p><ol><li>如果同时指定了name和type，则从Spring上下文中找到唯一匹配的bean进行装配，找不到则抛出异常  </li><li>如果指定了name，则从上下文中查找名称（id）匹配的bean进行装配，找不到则抛出异常  </li><li>如果指定了type，则从上下文中找到类型匹配的唯一bean进行装配，找不到或者找到多个，都会抛出异常  </li><li>如果既没有指定name，又没有指定type，则自动按照byName方式进行装配；如果没有匹配，则回退为一个原始类型进行匹配，如果匹配则自动装配；</li></ol><p><strong>@Autowired装配顺序</strong></p><ol><li>如果没有指定@Qualifier，默认安装类型注入，找不到则抛出异常。  </li><li>如果指定了@Qualifier，则按照名称注入，找不到则抛出异常。</li></ol><p>一般@Autowired和@Qualifier一起用，@Resource单独用。当然没有冲突的话@Autowired也可以单独用。值得注意的是Spring官方并不建议直接在类的field上使用@Autowired注解。参考<a href="http://olivergierke.de/2013/11/why-field-injection-is-evil/">《Why field injection is evil》</a></p>]]></content>
       
@@ -43,8 +70,8 @@
     
     <entry>
       <title>Kadane算法</title>
-      <link href="/2020/09/22/Kadane/"/>
-      <url>/2020/09/22/Kadane/</url>
+      <link href="2020/09/22/Kadane/"/>
+      <url>2020/09/22/Kadane/</url>
       
         <content type="html"><![CDATA[<p>Kadane算法扫描一次整个数列的所有数值，在每一个扫描点计算以该点数值为结束点的子数列的最大和（正数和）。该子数列由两部分组成：以前一个位置为结束点的最大子数列、该位置的数值。因为该算法用到了“最佳子结构”（以每个位置为终点的最大子数列都是基于其前一位置的最大子数列计算得出），该算法可看成动态规划的一个例子。</p><p>算法可用如下Python代码实现：</p><pre><code>def max_subarray(A):    max_ending_here = max_so_far = A[0]    for x in A[1:]:        max_ending_here = max(x, max_ending_here + x)        max_so_far = max(max_so_far, max_ending_here)    return max_so_far</code></pre><p>该问题的一个变种是：如果数列中含有负数元素，允许返回长度为零的子数列。该问题可用如下代码解决：</p><pre><code>def max_subarray(A):    max_ending_here = max_so_far = 0    for x in A:        max_ending_here = max(0, max_ending_here + x)        max_so_far = max(max_so_far, max_ending_here)    return max_so_far</code></pre>]]></content>
       
@@ -68,8 +95,8 @@
     
     <entry>
       <title>regex</title>
-      <link href="/2020/09/07/regex/"/>
-      <url>/2020/09/07/regex/</url>
+      <link href="2020/09/07/regex/"/>
+      <url>2020/09/07/regex/</url>
       
         <content type="html"><![CDATA[<p>匹配中文:</p><pre><code>[\u4e00-\u9fa5]</code></pre><p>英文字母:</p><pre><code>[a-zA-Z]</code></pre><p>数字:</p><pre><code>[0-9]</code></pre><p>匹配中文，英文字母和数字及_:</p><pre><code>^[\u4e00-\u9fa5_a-zA-Z0-9]+$</code></pre><p>同时判断输入长度：</p><pre><code>[\u4e00-\u9fa5_a-zA-Z0-9_]&#123;4,10&#125;</code></pre><pre><code>^[\w\u4E00-\u9FA5\uF900-\uFA2D]*$</code></pre><ol><li><p>一个正则表达式，只含有汉字、数字、字母、下划线不能以下划线开头和结尾：</p><pre><code>^(?!_)(?!.*?_$)[a-zA-Z0-9_\u4e00-\u9fa5]+$</code></pre><p>其中：</p><pre><code>^与字符串开始的地方匹配(?!_)　　不能以_开头(?!.*?_$)　　不能以_结尾[a-zA-Z0-9_\u4e00-\u9fa5]+　　至少一个汉字、数字、字母、下划线$　　与字符串结束的地方匹配</code></pre><p>放在程序里前面加@，否则需要\进行转义 </p><pre><code>&quot;^(?!_)(?!.*?_$)[a-zA-Z0-9_\u4e00-\u9fa5]+$&quot;</code></pre><p>或者：<code>&quot;^(?!_)\w*(? </code></p></li><li><p>只含有汉字、数字、字母、下划线，下划线位置不限：</p><pre><code>^[a-zA-Z0-9_\u4e00-\u9fa5]+$</code></pre></li><li><p>由数字、26个英文字母或者下划线组成的字符串</p><pre><code>^\w+$</code></pre></li><li><p>2~4个汉字</p><pre><code>&quot;^[\u4E00-\u9FA5]&#123;2,4&#125;$&quot;;</code></pre></li></ol>]]></content>
       

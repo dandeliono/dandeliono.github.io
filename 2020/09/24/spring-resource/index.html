@@ -36,7 +36,7 @@
     
 <link rel="stylesheet" href="/css/ball-atom.min.css">
 
-<meta name="generator" content="Hexo 5.1.1"></head>
+<meta name="generator" content="Hexo 5.4.0"></head>
 
 
 <body class="loading">
@@ -148,12 +148,14 @@
 </ol>
 <pre><code class="java">@Autowired()
 @Qualifier(&quot;baseDao&quot;)
-privateBaseDao baseDao;</code></pre>
+privateBaseDao baseDao;
+</code></pre>
 <ol start="3">
 <li>@Resource（这个注解属于J2EE的），默认按照名称进行装配，名称可以通过name属性进行指定，如果没有指定name属性，当注解写在字段上时，默认取字段名进行安装名称查找，如果注解写在setter方法上默认取属性名进行装配。当找不到与名称匹配的bean时才按照类型进行装配。但是需要注意的是，如果name属性一旦指定，就只会按照名称进行装配。</li>
 </ol>
 <pre><code class="java">@Resource(name=&quot;baseDao&quot;)
-privateBaseDao baseDao;</code></pre>
+privateBaseDao baseDao;
+</code></pre>
 <p><strong>@Resource装配顺序</strong>  </p>
 <ol>
 <li>如果同时指定了name和type，则从Spring上下文中找到唯一匹配的bean进行装配，找不到则抛出异常  </li>
@@ -201,9 +203,9 @@ privateBaseDao baseDao;</code></pre>
                     </dl>
                 </div>
                 <ul>
-                    <li><a href="/">4 <p>文章</p></a></li>
-                    <li><a href="/categories">3 <p>分类</p></a></li>
-                    <li><a href="/tags">3 <p>标签</p></a></li>
+                    <li><a href="/">5 <p>文章</p></a></li>
+                    <li><a href="/categories">4 <p>分类</p></a></li>
+                    <li><a href="/tags">5 <p>标签</p></a></li>
                 </ul>
             </div>
             

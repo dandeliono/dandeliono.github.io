@@ -36,7 +36,7 @@
     
 <link rel="stylesheet" href="/css/ball-atom.min.css">
 
-<meta name="generator" content="Hexo 5.1.1"></head>
+<meta name="generator" content="Hexo 5.4.0"></head>
 
 
 <body class="loading">
@@ -99,7 +99,7 @@
                 
                 <span>
                     <b class="iconfont icon-text2"></b> <i>文章字数</i>
-                    707
+                    709
                 </span>
                 
                 
@@ -146,14 +146,16 @@
     for x in A[1:]:
         max_ending_here = max(x, max_ending_here + x)
         max_so_far = max(max_so_far, max_ending_here)
-    return max_so_far</code></pre>
+    return max_so_far
+</code></pre>
 <p>该问题的一个变种是：如果数列中含有负数元素，允许返回长度为零的子数列。该问题可用如下代码解决：</p>
 <pre><code>def max_subarray(A):
     max_ending_here = max_so_far = 0
     for x in A:
         max_ending_here = max(0, max_ending_here + x)
         max_so_far = max(max_so_far, max_ending_here)
-    return max_so_far</code></pre>
+    return max_so_far
+</code></pre>
 
             <!--[if lt IE 9]><script>document.createElement('audio');</script><![endif]-->
             <audio id="audio" loop="1" preload="auto" controls="controls"
@@ -188,9 +190,9 @@
                     </dl>
                 </div>
                 <ul>
-                    <li><a href="/">4 <p>文章</p></a></li>
-                    <li><a href="/categories">3 <p>分类</p></a></li>
-                    <li><a href="/tags">3 <p>标签</p></a></li>
+                    <li><a href="/">5 <p>文章</p></a></li>
+                    <li><a href="/categories">4 <p>分类</p></a></li>
+                    <li><a href="/tags">5 <p>标签</p></a></li>
                 </ul>
             </div>
             
