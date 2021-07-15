@@ -1,0 +1,97 @@
+{
+  "main": {
+    "id": "dec3875c6c0ca882",
+    "type": "split",
+    "children": [
+      {
+        "id": "d152f046691765ba",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "_posts/regex.md",
+            "mode": "source"
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "9b9d76cc0feb1257",
+    "type": "split",
+    "children": [
+      {
+        "id": "23e55628c07304db",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7878bdc245d8b2bc",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {}
+            }
+          },
+          {
+            "id": "6474699320d90c4e",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "1bba1d8923330d34",
+    "type": "split",
+    "children": [
+      {
+        "id": "30a094e241d3a56e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "56ff795d060ffe8b",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "_posts/regex.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "active": "d152f046691765ba",
+  "lastOpenFiles": [
+    "_posts/regex.md",
+    "_posts/interview-java-collection.md",
+    "categories/index.md",
+    "tags/index.md",
+    "_posts/Kadane.md"
+  ]
+}
