@@ -2,6 +2,122 @@
 
 [中文更变日志](https://github.com/TriDiamond/hexo-theme-obsidian/blob/master/CHANGELOG_CN.md)
 
+## 🚀 v1.4.9.2 (Jul 16, 2021)
+
+- Fix a bug which coursed by missing "socials" in config template.
+- Attention: you need to add at least one default social media list in config template.
+
+## 🚀 v1.4.9.1 (May 20, 2021)
+
+- Add aplayer to play remote musics. Now only support [NetEase Cloud Music](music.163.com). Add the code to theme config:
+```
+# APlayer, now only support netease music list
+aplayer:
+  # Enable aplayer
+  enable: true
+  # Music list ID
+  musiclist: ""
+```
+
+## 🚀 v1.4.9 (Apr 8, 2021)
+
+- Add custom social platform for 3rdparty authors. This time support 3 platforms. You should add the following code in the fromt-meta of your article:
+```
+socials:
+    page: 
+        link: social platform link
+        name: the iconfont you want to use, for example: icon-bilibili-fill
+        path: the css file of your iconfont, for example: /css/font_bilibili/iconfont.css
+    page2: 
+        link: 
+        name: 
+        path: 
+    page3: 
+        link: 
+        name: 
+        path: 
+```
+
+## 🚀 v1.4.8 (Apr 8, 2021)
+
+- Add police beian
+- Modify beian fomat
+- Add the following code in your theme config file:
+```
+# This function is only used for those that server is located in China. If your server is located in outside China, you do not need to add the following code.
+#beian:
+beian: 
+# Enable
+  enable: true
+# Beian location，for example：粤ICP备
+  beianloc:
+# Beian ID，for example：2021022134号。
+  beianid:
+
+# Police Beian
+police:
+# Enable
+  enable: true
+# Beian location，for example: 粤公网安备
+  beianloc:
+# Beian ID, for example: 44010602009049号
+  beianid:
+# Beian Icon, for example: /img/beian.png
+  beianicon:
+```
+
+## 🚀 v1.4.7 (Mar 31, 2021)
+
+- Bug fix:
+  - Now "preview" for the other article can correctly take effect now
+
+
+## 🚀 v1.4.6 (Mar 31, 2021)
+
+- Add beian ID：Add the following code in your theme config file:
+```
+# This function is only used for those that server is located in China. If your server is located in outside China, you do not need to add the following code.
+# Enable
+beian: true
+# Beian location，for example：粤ICP备
+#beianloc:
+# Beian ID，for example：2021022134号
+#beianid:
+```
+- Custom 3rdparty author：add the following code in the front-matter of your markdown file：
+```
+title: example
+author: 3rdparty author name
+is3rdparty: true
+socials: 
+  page: https://example
+avatar: /example.jpg
+slogan: example
+```
+- Custom gitalk  proxy server to avoid 403 error，add the following code in your theme config file:
+``` 
+...
+# Upper is gitalk config code
+proxy: https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token 
+...
+```
+- Add custom mouse effect and custom mouse style, add the following code in your theme config file: 
+```
+mouse:
+# Enable custom mouse style
+  enable: true
+# Default style
+  default: /default.png
+# Hover sytle
+  pointer: /hover.png
+```
+
+## 🚀 v1.4.5 (Jan 22, 2021)
+
+### Improvements
+
+- Changed the fonts links from using `loli.net` to using `baomitu.com` (which is hosted by 360, it's more stable). This changes will improve the website from loading up faster.
+
 ## 🚀 v1.4.4 (Sep 16, 2020)
 
 Fixed couple of issues, get ready for some new features! Here thank you all for the 300+ stars so far, I will keep working on improving this theme! ❤️

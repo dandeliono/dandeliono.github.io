@@ -1,5 +1,121 @@
 # 更新日志
 
+[English Changelog](https://github.com/TriDiamond/hexo-theme-obsidian/blob/master/CHANGELOG.md)
+
+## 🚀 v1.4.9.2 (2021-07-16)
+
+- 修复了配置文件模板中没有社交媒体的默认配置导致的运行错误
+- 注意：socials字段内必须至少存在一个默认媒体
+
+## 🚀 v1.4.9.1 (2021-04-08)
+
+- 增加aplayer以播放云端音乐，目前仅支持网易云音乐歌单。添加下列代码至主题配置文件：
+```
+# APlayer, 目前只支持网易云歌单
+aplayer:
+  # 启用aplayer
+  enable: true
+  # 歌单ID
+  musiclist: ""
+```
+
+## 🚀 v1.4.9 (2021-04-08)
+
+- 增加第三方作者自定义社交平台功能，目前支持三个平台按顺序排布，需要插入到文章的front-meta内，代码如下：
+```
+socials:
+    page: 
+        link: 社交平台链接
+        name: 需要的iconfont名称，例子：icon-bilibili-fill
+        path: iconfont的css文件位置，例子：/css/font_bilibili/iconfont.css
+    page2: 
+        link: 
+        name: 
+        path: 
+    page3: 
+        link: 
+        name: 
+        path: 
+```
+
+## 🚀 v1.4.8 (2021-04-08)
+
+- 公安互联网备案号添加
+- 修改备案号格式
+- 在主题配置文件添加如下代码：
+```
+# 此功能仅使用国内服务器的用户需要配置，国外服务器开办网站不需要备案。
+beian: 
+# 启用备案
+  enable: true
+# 备案地区，例子：粤ICP备
+  beianloc:
+# 备案号，例子：2021022134号
+  beianid:
+
+# 公安互联网备案
+police:
+# 启用备案
+  enable: true
+# 备案地区，例子：粤公网安备
+  beianloc:
+# 备案号，例子：44010602009049号
+  beianid:
+# 公安互联网备案图标，例子：/img/beian.png
+  beianicon:
+```
+
+## 🚀 v1.4.7 (2021-03-31)
+
+- Bug修复：
+  - 现在文章front-matter的preview对非首篇文章可以正确生效了
+
+## 🚀 v1.4.6 (2021-03-31)
+
+- 备案号添加：在主题配置文件添加如下代码：
+```
+# 此功能仅使用国内服务器的用户需要配置，国外服务器开办网站不需要备案。
+# 启用备案
+beian: true
+# 备案地区，例子：粤ICP备
+#beianloc:
+# 备案号，例子：2021022134号
+#beianid:
+```
+- 第三方作者自定义：在front-matter添加特定词条，规则如下：
+```
+title: example
+author: 第三方作者名
+is3rdparty: true
+socials: 
+  page: https://example
+avatar: /example.jpg
+slogan: example
+```
+- gitalk反代服务器自定义功能以防止403，在主题配置文件配置：
+``` 
+...
+# 以上是gitalk配置代码
+proxy: https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token
+... 
+```
+- 添加更改鼠标样式功能，在主题配置文件配置：
+```
+mouse:
+# 启用
+  enable: true
+# 默认样式
+  default: /default.png
+# 悬浮及点击样式
+  pointer: /hover.png
+```
+
+## 🚀 v1.4.5 (2021-01-22)
+
+### 更变
+
+- 修改了字体资源链接，把 `loli.net` 换成 `baomitu.com` (这个资源来源于 360)。切换了这个字体资源库，会让网站打开速度有所提高。
+
 ## 🚀 v1.4.4 (2020-07-16)
 
 修复了几个 bug，准备开始添加新的功能，我也很多热心的使用在 issue 中给了很多功能建议。我这里深深的感谢大家的支持，还有目前给予这个主题 300+星星的粉丝们！我将会继续努力把这个主题做的更好！❤️
