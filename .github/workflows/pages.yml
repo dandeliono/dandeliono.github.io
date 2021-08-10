@@ -18,8 +18,8 @@ jobs:
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
       - name: Cache NPM dependencies
-        uses: actions/cache@v2
-        run: |
+      - uses: actions/cache@v2
+      - run: |
           git ls-files -z | while read -d '' path; do touch -d \"$(git log -1 --format=\"@%ct\" \"$path\")\" \"$path\"; done
           
       - name: Cache NPM dependencies
