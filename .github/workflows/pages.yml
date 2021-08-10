@@ -13,9 +13,6 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
-      - name: 恢复上次修改时间
-        run: git ls-files -z | while read -d '' path; do touch -d "$(git log -1 --format="@%ct" "$path")" "$path"; done
-     
       - name: Use Node.js 16.x
         uses: actions/setup-node@v1
         with:
@@ -32,6 +29,9 @@ jobs:
             ${{ runner.os }}-yarn-
       - name: Install Dependencies
         run: yarn install
+      - name: 恢复上次修改时间
+        run: git ls-files -z | while read -d '' path; do touch -d "$(git log -1 --format="@%ct" "$path")" "$path"; done
+     
       - name: Build
         run: yarn build
       - name: Deploy
