@@ -13,30 +13,28 @@ jobs:
         with:
           fetch-depth: 0
           submodules: true
-      - name: 恢复上次修改时间
-        run: /usr/bin/git ls-files -z | while read -d '' path; do sudo date -s "$(/usr/bin/git log -1 --format="@%ct" "$path")";cat "$path" > "$path"+".bak";mv "$path"+".bak" "$path"; stat "$path"; done
+      - name: 恢复文件修改时间
+        run: /usr/bin/git ls-files -z | while read -d '' path; do sudo date -s "$(/usr/bin/git log -1 --format="@%ct" "$path")";cat "$path" > "$path"+".bak";mv "$path"+".bak" "$path"; done
 
-      - name: Use Node.js 16.x
+      - name: 配置node环境
         uses: actions/setup-node@v1
         with:
-          node-version: '16.5.0'
-      - name: Get yarn cache directory path
+          node-version: '16.x'
+      - name: 获取yarn缓存路径
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-      - name: Cache NPM dependencies
+      - name: 获取npm缓存
         uses: actions/cache@v2
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-      - name: Install Dependencies
+      - name: 安装依赖
         run: yarn install
-      - name: clean
-        run: yarn clean
-      - name: Build
+      - name: 打包
         run: yarn build
-      - name: Deploy
+      - name: 部署
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
