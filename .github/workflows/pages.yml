@@ -32,9 +32,10 @@ jobs:
             ${{ runner.os }}-yarn-
       - name: Install Dependencies
         run: yarn install
-     
+      - name: clean
+        run: yarn clean
       - name: Build
-        run: hexo g
+        run: yarn build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
