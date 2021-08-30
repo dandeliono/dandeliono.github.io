@@ -37,5 +37,3 @@ $ cd /etc/init.d
 $ sudo update-rc.d -f test remove
 
 ```
-
- [https://blog.csdn.net/autoliuweijie/article/details/73279136](https://blog.csdn.net/autoliuweijie/article/details/73279136)
