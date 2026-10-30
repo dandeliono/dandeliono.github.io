@@ -1,0 +1,723 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+  
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0" theme-name="Stellar" theme-version="2.0.0">
+  <link rel="canonical" href="https://codearea.cc/post/JAVA/SpringBoot 扩展接口/" data-stellar-page-meta="">
+  
+  <meta name="generator" content="Hexo 8.1.2">
+  <meta http-equiv="x-dns-prefetch-control" content="on">
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  <title data-stellar-page-meta="">SpringBoot 扩展接口 - 个人笔记</title>
+  <script data-stellar-script="core">
+    (function () {
+      var key = 'stellar:v2:leftbar-state';
+      var fallback = "expanded";
+      try {
+        var value = localStorage.getItem(key);
+        document.documentElement.dataset.leftbarState = value === 'collapsed' || value === 'expanded' ? value : fallback;
+      } catch (error) {
+        document.documentElement.dataset.leftbarState = fallback;
+      }
+    })();
+  </script>
+
+  <meta name="description" content="1、背景Spring的核心思想就是容器，当容器refresh的时候，外部看上去风平浪静，其实内部则是一片惊涛骇浪，汪洋一片。Springboot更是封装了Spring，遵循约定大于配置，加上自动装配的机制。很多时候我们只要引用了一个依赖，几乎是零配置就能完成一个功能的装配。 我非常喜欢这种自动装配的机制，所以在自己开发中间件和公共依赖工具的时候也会用到这个特性。让使用者以最小的代价接入。想要把自动" data-stellar-page-meta="">
+<meta property="og:type" content="article" data-stellar-page-meta="">
+<meta property="og:title" content="SpringBoot 扩展接口" data-stellar-page-meta="">
+<meta property="og:url" content="https://codearea.cc/post/JAVA/SpringBoot%20%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3/" data-stellar-page-meta="">
+<meta property="og:site_name" content="个人笔记" data-stellar-page-meta="">
+<meta property="og:description" content="1、背景Spring的核心思想就是容器，当容器refresh的时候，外部看上去风平浪静，其实内部则是一片惊涛骇浪，汪洋一片。Springboot更是封装了Spring，遵循约定大于配置，加上自动装配的机制。很多时候我们只要引用了一个依赖，几乎是零配置就能完成一个功能的装配。 我非常喜欢这种自动装配的机制，所以在自己开发中间件和公共依赖工具的时候也会用到这个特性。让使用者以最小的代价接入。想要把自动" data-stellar-page-meta="">
+<meta property="og:locale" content="zh_CN" data-stellar-page-meta="">
+<meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f822549674d24118b6641d5bcc28ed65~tplv-k3u1fbpfcp-zoom-in-crop-mark:1512:0:0:0.awebp#?w=640&amp;h=649&amp;e=jpg&amp;b=fcfbfb" data-stellar-page-meta="">
+<meta property="article:author" content="dandeliono" data-stellar-page-meta="">
+<meta property="article:published_time" content="2023-11-15T08:23:04.000Z" data-stellar-page-meta="">
+<meta property="article:modified_time" content="2023-11-15T08:23:04.000Z" data-stellar-page-meta="">
+<meta name="twitter:card" content="summary" data-stellar-page-meta="">
+<meta name="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f822549674d24118b6641d5bcc28ed65~tplv-k3u1fbpfcp-zoom-in-crop-mark:1512:0:0:0.awebp#?w=640&amp;h=649&amp;e=jpg&amp;b=fcfbfb" data-stellar-page-meta=""><meta name="twitter:title" content="SpringBoot 扩展接口" data-stellar-page-meta="">
+  
+  
+  <meta name="keywords" content="Java,Linux,中间件,云原生,技术笔记" data-stellar-page-meta="">
+
+  <!-- feed -->
+  
+
+  <link rel="preload" href="/css/main.css?v=2.0.0" as="style">
+  <link rel="stylesheet" href="/css/main.css?v=2.0.0">
+  <style>:root{--text-loading:"正在加载";--text-loading-error:"加载失败，请稍后重试。"}</style>
+
+
+  
+
+  
+
+  <script type="application/ld+json" data-stellar-page-meta="">{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"dandeliono","sameAs":["https://github.com/dandeliono"]},"dateCreated":"2023-11-15T08:23:04+00:00","dateModified":"2023-11-15T08:23:04+00:00","datePublished":"2023-11-15T08:23:04+00:00","description":"1、背景Spring的核心思想就是容器，当容器refresh的时候，外部看上去风平浪静，其实内部则是一片惊涛骇浪，汪洋一片。Springboot更是封装了Spring，遵循约定大于配置，加上自动装配的机制。很多时候我们只要引用了一个依赖，几乎是零配置就能完成一个功能的装配。\n我非常喜欢这种自动装配的机制，所以在自己开发中间件和公共依赖工具的时候也会用到这个特性。让使用者以最小的代价接入。想要...","headline":"SpringBoot 扩展接口","mainEntityOfPage":{"@type":"WebPage","@id":"https://codearea.cc/post/JAVA/SpringBoot%20%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3/"},"publisher":{"@type":"Organization","name":"dandeliono","sameAs":["https://github.com/dandeliono"]},"url":"https://codearea.cc/post/JAVA/SpringBoot%20%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3/","image":["https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f822549674d24118b6641d5bcc28ed65~tplv-k3u1fbpfcp-zoom-in-crop-mark:1512:0:0:0.awebp#?w=640\u0026amp;h=649\u0026amp;e=jpg\u0026amp;b=fcfbfb"],"thumbnailUrl":"https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f822549674d24118b6641d5bcc28ed65~tplv-k3u1fbpfcp-zoom-in-crop-mark:1512:0:0:0.awebp#?w=640\u0026amp;h=649\u0026amp;e=jpg\u0026amp;b=fcfbfb"}</script>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-WXLPP6W80J"></script>
+<script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-WXLPP6W80J');</script>
+<script async="" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8915554050347707" crossorigin="anonymous"></script>
+
+
+  <link rel="stylesheet" href="/css/stellar-icons.css?v=7c185ad1a9a79674">
+  <link rel="preload" as="script" href="/js/stellar-icons.js?v=b068c3800a3fa93b">
+  
+  
+</head>
+<body data-page-type="content" data-page-layout="post" data-article-style="tech"><div data-stellar-runtime-region="" id="site-cover" class="site-cover"></div><div class="site-shell" id="start" data-regions="leftbar rightbar"><div class="site-workspace">
+<aside data-stellar-runtime-region="" id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="Leftbar"><div class="site-region__surface ui-surface"><div class="site-region__decoration" aria-hidden="true"></div><div class="site-region__viewport"><header class="site-region__header site-region__zone site-region__zone--top">
+    <div class="widget-instance widget-instance--brand" data-widget-id="leftbar:fixed:brand" data-presentation="leftbar" data-leftbar-rail="">
+<header class="brand-header brand-header--regular brand-header--site"><div class="brand-wrap"><a class="brand-image brand-image--avatar" href="/"><img no-lazy="" src="https://avatars.githubusercontent.com/u/29496357" alt="" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></a><a class="brand-title" href="/"><div class="brand-name">个人笔记</div><div class="brand-tagline cap">永远相信美好的事情即将发生</div></a><div class="brand-stats data-service ds-ghinfo" data-api="https://api.github.com/users/dandeliono"><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=followers"><span class="brand-stat__value" type="text" id="followers"></span><span class="brand-stat__label">followers</span></a><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=following"><span class="brand-stat__value" type="text" id="following"></span><span class="brand-stat__label">following</span></a><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=repositories"><span class="brand-stat__value" type="text" id="public_repos"></span><span class="brand-stat__label">repos</span></a></div></div><div class="brand-search">
+
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<button class="ui-collection__item ui-interactive card-hover card-hover--spotlight search-trigger has-hover-surface" type="button" title="搜索" aria-label="搜索" data-shell-action="open-search" data-search-instance="leftbar-brand-search" data-search-domain="blog" data-search-domain-label="博客" data-search-domain-blog="true">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">搜索</span>
+      
+      
+    </span>
+  
+  <kbd class="search-shortcut" aria-hidden="true">⌘K</kbd>
+
+  
+</button>
+
+  
+</div>
+
+
+</div></header>
+</div>
+  </header>
+  <div class="site-region__body site-region__zone site-region__zone--body">
+    <div class="widget-instance widget-instance--menu" data-widget-id="leftbar:fixed:menu" data-presentation="leftbar" data-leftbar-rail="">
+
+
+<nav class="menu dis-select">
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight is-active" href="/" title="近期发布" aria-current="page">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M5.879 2.879C5 3.757 5 5.172 5 8v8c0 2.828 0 4.243.879 5.121C6.757 22 8.172 22 11 22h2c2.828 0 4.243 0 5.121-.879C19 20.243 19 18.828 19 16V8c0-2.828 0-4.243-.879-5.121C17.243 2 15.828 2 13 2h-2c-2.828 0-4.243 0-5.121.879M8.25 17a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75M9 12.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM8.25 9A.75.75 0 0 1 9 8.25h6a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 9" clip-rule="evenodd"></path><path fill="currentColor" d="M5.235 4.058C5 4.941 5 6.177 5 8v8c0 1.823 0 3.058.235 3.942L5 19.924c-.975-.096-1.631-.313-2.121-.803C2 18.243 2 16.828 2 14v-4c0-2.829 0-4.243.879-5.121c.49-.49 1.146-.707 2.121-.803zm13.53 15.884C19 19.058 19 17.822 19 16V8c0-1.823 0-3.059-.235-3.942l.235.018c.975.096 1.631.313 2.121.803C22 5.757 22 7.17 22 9.999v4c0 2.83 0 4.243-.879 5.122c-.49.49-1.146.707-2.121.803z" opacity=".5"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">近期发布</span>
+      
+      
+    </span>
+  
+  
+  <span class="ui-collection__indicator"></span>
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/categories/" title="分类">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M2 6.94975C2 6.06722 2 5.62595 2.06935 5.25839C2.37464 3.64031 3.64031 2.37464 5.25839 2.06935C5.62595 2 6.06722 2 6.94975 2C7.33642 2 7.52976 2 7.71557 2.01738C8.51665 2.09229 9.27652 2.40704 9.89594 2.92051C10.0396 3.03961 10.1763 3.17633 10.4497 3.44975L11 4C11.8158 4.81578 12.2237 5.22367 12.7121 5.49543C12.9804 5.64471 13.2651 5.7626 13.5604 5.84678C14.0979 6 14.6747 6 15.8284 6H16.2021C18.8345 6 20.1506 6 21.0062 6.76946C21.0849 6.84024 21.1598 6.91514 21.2305 6.99383C22 7.84935 22 9.16554 22 11.7979V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V6.94975Z" opacity=".5"></path><path d="M20 6.23751C19.9992 5.94016 19.9949 5.76263 19.9746 5.60842C19.7974 4.26222 18.7381 3.2029 17.3919 3.02567C17.1969 3 16.9647 3 16.5003 3H9.98828C10.1042 3.10392 10.2347 3.23445 10.45 3.44975L11.0003 4C11.8161 4.81578 12.2239 5.22367 12.7124 5.49543C12.9807 5.64471 13.2653 5.7626 13.5606 5.84678C14.0982 6 14.675 6 15.8287 6H16.2024C17.9814 6 19.1593 6 20 6.23751Z"></path><path fill-rule="evenodd" d="M12.25 10C12.25 9.58579 12.5858 9.25 13 9.25H18C18.4142 9.25 18.75 9.58579 18.75 10C18.75 10.4142 18.4142 10.75 18 10.75H13C12.5858 10.75 12.25 10.4142 12.25 10Z" clip-rule="evenodd"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">分类</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/tags/" title="标签">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M10.7226 3.20068C10.8335 2.80158 10.5998 2.38817 10.2007 2.27731C9.80163 2.16645 9.38822 2.40011 9.27736 2.79921L7.76327 8.24995H4C3.58579 8.24995 3.25 8.58573 3.25 8.99995C3.25 9.41416 3.58579 9.74995 4 9.74995H7.3466L5.81882 15.2499H2C1.58579 15.2499 1.25 15.5857 1.25 15.9999C1.25 16.4142 1.58579 16.7499 2 16.7499H5.40216L4.27736 20.7992C4.1665 21.1983 4.40016 21.6117 4.79927 21.7226C5.19837 21.8334 5.61178 21.5998 5.72264 21.2007L6.95895 16.7499H14.4022L13.2774 20.7992C13.1665 21.1983 13.4002 21.6117 13.7993 21.7226C14.1984 21.8334 14.6118 21.5998 14.7226 21.2007L15.959 16.7499H20C20.4142 16.7499 20.75 16.4142 20.75 15.9999C20.75 15.5857 20.4142 15.2499 20 15.2499H16.3756L17.9034 9.74995H22C22.4142 9.74995 22.75 9.41416 22.75 8.99995C22.75 8.58573 22.4142 8.24995 22 8.24995H18.3201L19.7226 3.20068C19.8335 2.80158 19.5998 2.38817 19.2007 2.27731C18.8016 2.16645 18.3882 2.40011 18.2774 2.79921L16.7633 8.24995H9.32006L10.7226 3.20068ZM14.8188 15.2499L16.3466 9.74995H8.9034L7.37562 15.2499H14.8188Z" clip-rule="evenodd"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">标签</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/archives/" title="归档">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M6.94028 2C7.35614 2 7.69326 2.32421 7.69326 2.72414V4.18487C8.36117 4.17241 9.10983 4.17241 9.95219 4.17241H13.9681C14.8104 4.17241 15.5591 4.17241 16.227 4.18487V2.72414C16.227 2.32421 16.5641 2 16.98 2C17.3958 2 17.733 2.32421 17.733 2.72414V4.24894C19.178 4.36022 20.1267 4.63333 20.8236 5.30359C21.5206 5.97385 21.8046 6.88616 21.9203 8.27586L22 9H2.92456H2V8.27586C2.11571 6.88616 2.3997 5.97385 3.09665 5.30359C3.79361 4.63333 4.74226 4.36022 6.1873 4.24894V2.72414C6.1873 2.32421 6.52442 2 6.94028 2Z"></path><path d="M21.9995 14.0001V12.0001C21.9995 11.161 21.9963 9.66527 21.9834 9H2.00917C1.99626 9.66527 1.99953 11.161 1.99953 12.0001V14.0001C1.99953 17.7713 1.99953 19.6569 3.1711 20.8285C4.34267 22.0001 6.22829 22.0001 9.99953 22.0001H13.9995C17.7708 22.0001 19.6564 22.0001 20.828 20.8285C21.9995 19.6569 21.9995 17.7713 21.9995 14.0001Z" opacity=".5"></path><path d="M18 17C18 17.5523 17.5523 18 17 18C16.4477 18 16 17.5523 16 17C16 16.4477 16.4477 16 17 16C17.5523 16 18 16.4477 18 17Z"></path><path d="M18 13C18 13.5523 17.5523 14 17 14C16.4477 14 16 13.5523 16 13C16 12.4477 16.4477 12 17 12C17.5523 12 18 12.4477 18 13Z"></path><path d="M13 17C13 17.5523 12.5523 18 12 18C11.4477 18 11 17.5523 11 17C11 16.4477 11.4477 16 12 16C12.5523 16 13 16.4477 13 17Z"></path><path d="M13 13C13 13.5523 12.5523 14 12 14C11.4477 14 11 13.5523 11 13C11 12.4477 11.4477 12 12 12C12.5523 12 13 12.4477 13 13Z"></path><path d="M8 17C8 17.5523 7.55228 18 7 18C6.44772 18 6 17.5523 6 17C6 16.4477 6.44772 16 7 16C7.55228 16 8 16.4477 8 17Z"></path><path d="M8 13C8 13.5523 7.55228 14 7 14C6.44772 14 6 13.5523 6 13C6 12.4477 6.44772 12 7 12C7.55228 12 8 12.4477 8 13Z"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">归档</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://tools.codearea.cc" title="工具">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M14.0516 2C15.7318 1.99999 17.0627 1.99997 18.1043 2.14245C19.1762 2.28908 20.0438 2.59803 20.728 3.29418C21.4122 3.99033 21.7159 4.87308 21.86 5.9637C22 7.02342 22 8.37752 22 10.087V10.0871V13.913V13.913C22 15.6225 22 16.9766 21.86 18.0363C21.7159 19.1269 21.4122 20.0097 20.728 20.7058C20.0438 21.402 19.1762 21.7109 18.1043 21.8575C17.0627 22 15.7318 22 14.0517 22H14.0516H13.9484H13.9483C12.2681 22 10.9373 22 9.89575 21.8575C8.82382 21.7109 7.95621 21.402 7.27199 20.7058C6.58778 20.0097 6.28413 19.1269 6.14001 18.0363C5.99998 16.9766 5.99999 15.6225 6 13.913V13.9129V10.087V10.087C5.99999 8.3775 5.99998 7.02343 6.14001 5.9637C6.28413 4.87308 6.58778 3.99033 7.27199 3.29418C7.95621 2.59803 8.82382 2.28908 9.89575 2.14245C10.9373 1.99997 12.2682 1.99999 13.9484 2H13.9484H14.0516H14.0516Z" opacity=".5"></path><path d="M12 18.25C11.5858 18.25 11.25 18.5858 11.25 19C11.25 19.4142 11.5858 19.75 12 19.75H17C17.4142 19.75 17.75 19.4142 17.75 19C17.75 18.5858 17.4142 18.25 17 18.25H12Z"></path><path d="M2 14.5C2 13.0955 2 12.3933 2.33706 11.8889C2.48298 11.6705 2.67048 11.483 2.88886 11.3371C3.39331 11 4.09554 11 5.5 11C6.90446 11 7.60669 11 8.11114 11.3371C8.32952 11.483 8.51702 11.6705 8.66294 11.8889C9 12.3933 9 13.0955 9 14.5V18.5C9 19.9045 9 20.6067 8.66294 21.1111C8.51702 21.3295 8.32952 21.517 8.11114 21.6629C7.60669 22 6.90446 22 5.5 22C4.09554 22 3.39331 22 2.88886 21.6629C2.67048 21.517 2.48298 21.3295 2.33706 21.1111C2 20.6067 2 19.9045 2 18.5V14.5Z"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">工具</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div>
+
+</nav>
+
+</div>
+    <div class="widgets widget-stack widget-stack--leftbar widget-stack--body"><div class="widget-instance widget-instance--recent" data-widget-id="leftbar:1:recent" data-presentation="leftbar">
+
+<widget class="widget-wrapper slide-up recent-widget">
+  
+    <div class="widget-header dis-select">
+      <span class="name">最近更新</span>
+      
+    </div>
+  
+  <div class="widget-body"><div class="ui-collection" data-layout="list" data-variant="nav" data-density="compact">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/OpenJDK%2021%20%E5%8D%87%E7%BA%A7%E6%8C%87%E5%8D%97/" title="OpenJDK 21 升级指南">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">O</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">OpenJDK 21 升级指南</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/%E4%BD%BF%E7%94%A8%20OpenRewrite%20%E4%BC%98%E5%8C%96%E4%BB%A3%E7%A0%81/" title="使用 OpenRewrite 优化代码">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">使</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">使用 OpenRewrite 优化代码</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/Maven%20%E7%A7%81%E6%9C%8D%20Nexus%20%E5%8D%87%E7%BA%A7%E5%AE%9E%E5%BD%95/" title="Maven 私服 Nexus 升级实录">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">M</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Maven 私服 Nexus 升级实录</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/%E5%AE%9A%E5%88%B6Ubuntu%E5%AE%89%E8%A3%85%E9%95%9C%E5%83%8F%E7%9A%84%E4%B8%A4%E7%A7%8D%E6%96%B9%E6%B3%95/" title="定制Ubuntu安装镜像的两种方法">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">定</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">定制Ubuntu安装镜像的两种方法</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/%E5%B8%B8%E8%A7%81%E7%9A%84bpftrace%E8%84%9A%E6%9C%AC/" title="常见的bpftrace脚本">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">常</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">常见的bpftrace脚本</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20etc%20shadow%20%E6%96%87%E4%BB%B6%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" title="Linux /etc/shadow 文件学习笔记">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux /etc/shadow 文件学习笔记</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20%E4%B8%8B%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E4%B8%8E%E6%8A%80%E5%B7%A7%E6%B1%87%E6%80%BB/" title="Linux 下常用命令与技巧汇总">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux 下常用命令与技巧汇总</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/ATOP%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E6%80%BB%E7%BB%93/" title="ATOP工作原理总结">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">A</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">ATOP工作原理总结</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20%E6%89%A9%E5%AE%B9%20%E6%A0%B9%E5%88%86%E5%8C%BA(LVM+%E9%9D%9ELVM)/" title="Linux 扩容 / 根分区(LVM+非LVM)">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux 扩容 / 根分区(LVM+非LVM)</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/ALG/%E5%BB%B6%E8%BF%9F%E5%8F%8C%E5%88%A0%E5%A6%82%E6%AD%A4%E5%A5%BD%E7%94%A8%EF%BC%8C%E4%B8%BA%E4%BD%95%E5%A4%A7%E5%8E%82%E4%BB%8E%E6%9D%A5%E4%B8%8D%E7%94%A8Cache-aside%E4%B8%8B%E6%95%B0%E6%8D%AE%E5%8F%98%E6%9B%B4%E6%8E%A8%E8%8D%90%E4%BD%BF%E7%94%A8%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E7%9A%84%E7%AD%96%E7%95%A5%EF%BC%8C%E4%B8%BA%E9%99%8D%E4%BD%8E%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%80%E8%87%B4%E9%80%9A%E5%B8%B8%E4%BC%9A%E9%85%8D%E5%90%88%E5%BB%B6%E8%BF%9F/" title="延迟双删如此好用，为何大厂从来不用Cache-aside下数据变更推荐使用删除缓存的策略，为降低数据不一致通常会配合延迟">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">延</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">延迟双删如此好用，为何大厂从来不用Cache-aside下数据变更推荐使用删除缓存的策略，为降低数据不一致通常会配合延迟</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div></div>
+  
+</widget>
+
+
+</div></div>
+  </div>
+  <footer class="site-region__footer">
+    <div class="site-region__footer-actions"><div class="widget-instance widget-instance--actions" data-widget-id="leftbar:fixed:actions" data-presentation="leftbar">
+<div class="region-actions social-wrap ui-collection" data-layout="inline" data-variant="nav" data-density="compact"><a class="social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" href="https://github.com/dandeliono" target="_blank" rel="external nofollow noopener noreferrer"><span class="ui-icon"><svg class="icon" viewBox="0 0 1 1" data-icon="default:github" aria-hidden="true"></svg></span></a></div>
+</div></div>
+    <div class="site-region__system ui-collection" data-layout="inline" data-variant="nav" data-density="compact">
+      <div class="site-region__settings"><div class="widget-instance widget-instance--settings" data-widget-id="leftbar:fixed:settings" data-presentation="leftbar" data-leftbar-rail="">
+<a class="settings-widget ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/settings/" data-profile-provider="" data-profile-identity-enabled="false" data-profile-fallback-avatar="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg" data-settings-placement="leftbar" data-settings-label="设置" aria-label="设置" title="设置">
+  <span class="settings-widget__avatar" aria-hidden="true">
+    <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><path fill-rule="evenodd" d="M12.4277 2C11.3139 2 10.2995 2.6007 8.27081 3.80211L7.58466 4.20846C5.55594 5.40987 4.54158 6.01057 3.98466 7C3.42773 7.98943 3.42773 9.19084 3.42773 11.5937V12.4063C3.42773 14.8092 3.42773 16.0106 3.98466 17C4.54158 17.9894 5.55594 18.5901 7.58466 19.7915L8.27081 20.1979C10.2995 21.3993 11.3139 22 12.4277 22C13.5416 22 14.5559 21.3993 16.5847 20.1979L17.2708 19.7915C19.2995 18.5901 20.3139 17.9894 20.8708 17C21.4277 16.0106 21.4277 14.8092 21.4277 12.4063V11.5937C21.4277 9.19084 21.4277 7.98943 20.8708 7C20.3139 6.01057 19.2995 5.40987 17.2708 4.20846L16.5847 3.80211C14.5559 2.6007 13.5416 2 12.4277 2Z" clip-rule="evenodd" opacity=".5"></path><path d="M12.4277 8.25C10.3567 8.25 8.67773 9.92893 8.67773 12C8.67773 14.0711 10.3567 15.75 12.4277 15.75C14.4988 15.75 16.1777 14.0711 16.1777 12C16.1777 9.92893 14.4988 8.25 12.4277 8.25Z"></path></g></svg></span>
+  </span>
+  <span class="settings-widget__name ui-collection__title">设置</span>
+</a>
+</div></div>
+      <button type="button" class="leftbar-state-toggle ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" aria-label="Collapse leftbar" aria-expanded="true" data-shell-action="toggle-leftbar"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M3.172 4.172C2 5.343 2 7.229 2 11v2c0 3.771 0 5.657 1.172 6.828S6.229 21 10 21h5V3h-5C6.229 3 4.343 3 3.172 4.172" clip-rule="evenodd" opacity=".5"></path><path fill="currentColor" d="M5.5 9.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zm1 4a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5zM22 13v-2c0-3.771 0-5.657-1.172-6.828c-.974-.975-3.192-1.139-5.828-1.166v17.988c2.636-.027 4.854-.191 5.828-1.166C22 18.657 22 16.771 22 13"></path></svg></span></button>
+    </div>
+  </footer></div></div></aside>
+<main data-stellar-runtime-region="" class="site-main" id="main">
+
+
+<div class="article-banner-wrap slide-up"><div class="article banner top">
+  <div class="content">
+    
+    <div class="top bread-nav footnote"><div class="top-row"><div class="left" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/Java/">Java</a>
+</div><div class="right"><span class="cap reading">5682 字 · 预计阅读 19 分钟</span></div></div><div class="meta-row">
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2023-11-15T08:23:04.000Z">2023-11-15</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2023-11-15T08:23:04.000Z">2023-11-15</time></span></div>
+</div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>SpringBoot 扩展接口</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div></div>
+<article class="md-text content slide-up"><h3 id="1、背景"><a href="#1、背景" class="headerlink" title="1、背景"></a>1、背景</h3><p>Spring的核心思想就是容器，当容器refresh的时候，外部看上去风平浪静，其实内部则是一片惊涛骇浪，汪洋一片。Springboot更是封装了Spring，遵循约定大于配置，加上自动装配的机制。很多时候我们只要引用了一个依赖，几乎是零配置就能完成一个功能的装配。</p>
+<p>我非常喜欢这种自动装配的机制，所以在自己开发中间件和公共依赖工具的时候也会用到这个特性。让使用者以最小的代价接入。想要把自动装配玩的转，就必须要了解spring对于bean的构造生命周期以及各个扩展接口。当然了解了bean的各个生命周期也能促进我们加深对spring的理解。业务代码也能合理利用这些扩展点写出更加漂亮的代码。</p>
+<p>在这篇文章里，我总结了几乎<code>Spring &amp; Springboot</code>所有的扩展接口，以及各个扩展点的使用场景。并且整理出了一个bean在spring内部从被加载到最后初始化完成所有可扩展点的顺序调用图。从而我们也能窥探到bean是如何一步步加载到spring容器中的。</p>
+<h3 id="2、可扩展的接口启动调用顺序图"><a href="#2、可扩展的接口启动调用顺序图" class="headerlink" title="2、可扩展的接口启动调用顺序图"></a>2、可扩展的接口启动调用顺序图</h3><p>以下是spring容器中Bean的生命周期内所有可扩展的点的调用顺序，下面会一个个分析</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f822549674d24118b6641d5bcc28ed65~tplv-k3u1fbpfcp-zoom-in-crop-mark:1512:0:0:0.awebp#?w=640&amp;h=649&amp;e=jpg&amp;b=fcfbfb" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="640" height="649" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[352.7978,5.5403,84.8998,1]}" data-stellar-image-source="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/f822549674d24118b6641d5bcc28ed65~tplv-k3u1fbpfcp-zoom-in-crop-mark:1512:0:0:0.awebp#?w=640&amp;h=649&amp;e=jpg&amp;b=fcfbfb"></p>
+<h3 id="3、ApplicationContextInitializer"><a href="#3、ApplicationContextInitializer" class="headerlink" title="3、ApplicationContextInitializer"></a><strong>3、ApplicationContextInitializer</strong></h3><blockquote>
+<p>org.springframework.context.ApplicationContextInitializer</p>
+</blockquote>
+<p>这是整个spring容器在刷新之前初始化<code>ConfigurableApplicationContext</code>的回调接口，简单来说，就是在容器刷新之前调用此类的<code>initialize</code>方法。这个点允许被用户自己扩展。用户可以在整个spring容器还没被初始化之前做一些事情。</p>
+<p>可以想到的场景可能为，在最开始激活一些配置，或者利用这时候class还没被类加载器加载的时机，进行动态字节码注入等操作。</p>
+<p>扩展方式为：</p>
+<figure class="highlight typescript"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestApplicationContextInitializer</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">ApplicationContextInitializer</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="built_in">void</span>&nbsp;<span class="title function_">initialize</span>(<span class="params"><span class="title class_">ConfigurableApplicationContext</span>&nbsp;applicationContext</span>)&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title class_">System</span>.<span class="property">out</span>.<span class="title function_">println</span>(<span class="string">"[ApplicationContextInitializer]"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>因为这时候spring容器还没被初始化，所以想要自己的扩展的生效，有以下三种方式：</p>
+<ul>
+<li>在启动类中用<code>springApplication.addInitializers(new TestApplicationContextInitializer())</code>语句加入</li>
+<li>配置文件配置<code>context.initializer.classes=com.example.demo.TestApplicationContextInitializer</code></li>
+<li>Spring SPI扩展，在spring.factories中加入<code>org.springframework.context.ApplicationContextInitializer=com.example.demo.TestApplicationContextInitializer</code></li>
+</ul>
+<h3 id="4、BeanDefinitionRegistryPostProcessor"><a href="#4、BeanDefinitionRegistryPostProcessor" class="headerlink" title="4、BeanDefinitionRegistryPostProcessor"></a><strong>4、BeanDefinitionRegistryPostProcessor</strong></h3><blockquote>
+<p>org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor</p>
+</blockquote>
+<p>这个接口在读取项目中的<code>beanDefinition</code>之后执行，提供一个补充的扩展点</p>
+<p>使用场景：你可以在这里动态注册自己的<code>beanDefinition</code>，可以加载classpath之外的bean</p>
+<p>扩展方式为:</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestBeanDefinitionRegistryPostProcessor</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">BeanDefinitionRegistryPostProcessor</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="type">void</span>&nbsp;<span class="title function_">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry&nbsp;registry)</span>&nbsp;<span class="keyword">throws</span>&nbsp;BeansException&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<span class="string">"[BeanDefinitionRegistryPostProcessor]&nbsp;postProcessBeanDefinitionRegistry"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="type">void</span>&nbsp;<span class="title function_">postProcessBeanFactory</span><span class="params">(ConfigurableListableBeanFactory&nbsp;beanFactory)</span>&nbsp;<span class="keyword">throws</span>&nbsp;BeansException&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<span class="string">"[BeanDefinitionRegistryPostProcessor]&nbsp;postProcessBeanFactory"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="5、BeanFactoryPostProcessor"><a href="#5、BeanFactoryPostProcessor" class="headerlink" title="5、BeanFactoryPostProcessor"></a><strong>5、BeanFactoryPostProcessor</strong></h3><blockquote>
+<p>org.springframework.beans.factory.config.BeanFactoryPostProcessor</p>
+</blockquote>
+<p>这个接口是<code>beanFactory</code>的扩展接口，调用时机在spring在读取<code>beanDefinition</code>信息之后，实例化bean之前。</p>
+<p>在这个时机，用户可以通过实现这个扩展接口来自行处理一些东西，比如修改已经注册的<code>beanDefinition</code>的元信息。</p>
+<p>扩展方式为：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestBeanFactoryPostProcessor</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">BeanFactoryPostProcessor</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="type">void</span>&nbsp;<span class="title function_">postProcessBeanFactory</span><span class="params">(ConfigurableListableBeanFactory&nbsp;beanFactory)</span>&nbsp;<span class="keyword">throws</span>&nbsp;BeansException&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<span class="string">"[BeanFactoryPostProcessor]"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="6、InstantiationAwareBeanPostProcessor"><a href="#6、InstantiationAwareBeanPostProcessor" class="headerlink" title="6、InstantiationAwareBeanPostProcessor"></a><strong>6、InstantiationAwareBeanPostProcessor</strong></h3><blockquote>
+<p>org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor</p>
+</blockquote>
+<p>该接口继承了<code>BeanPostProcess</code>接口，区别如下：</p>
+<p><strong><code>BeanPostProcess</code>接口只在bean的初始化阶段进行扩展（注入spring上下文前后），而<code>InstantiationAwareBeanPostProcessor</code>接口在此基础上增加了3个方法，把可扩展的范围增加了实例化阶段和属性注入阶段。</strong> </p>
+<p>该类主要的扩展点有以下5个方法，主要在bean生命周期的两大阶段：<strong>实例化阶段</strong>和<strong>初始化阶段</strong>，下面一起进行说明，按调用顺序为：</p>
+<ul>
+<li><code>postProcessBeforeInstantiation</code>：实例化bean之前，相当于new这个bean之前</li>
+<li><code>postProcessAfterInstantiation</code>：实例化bean之后，相当于new这个bean之后</li>
+<li><code>postProcessPropertyValues</code>：bean已经实例化完成，在属性注入时阶段触发，<code>@Autowired</code>,<code>@Resource</code>等注解原理基于此方法实现</li>
+<li><code>postProcessBeforeInitialization</code>：初始化bean之前，相当于把bean注入spring上下文之前</li>
+<li><code>postProcessAfterInitialization</code>：初始化bean之后，相当于把bean注入spring上下文之后</li>
+</ul>
+<p>使用场景：这个扩展点非常有用 ，无论是写中间件和业务中，都能利用这个特性。比如对实现了某一类接口的bean在各个生命期间进行收集，或者对某个类型的bean进行统一的设值等等。</p>
+<p>扩展方式为：</p>
+<figure class="highlight typescript"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestInstantiationAwareBeanPostProcessor</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">InstantiationAwareBeanPostProcessor</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="title class_">Object</span>&nbsp;<span class="title function_">postProcessBeforeInitialization</span>(<span class="title class_">Object</span>&nbsp;bean,&nbsp;<span class="title class_">String</span>&nbsp;beanName)&nbsp;throws&nbsp;<span class="title class_">BeansException</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title class_">System</span>.<span class="property">out</span>.<span class="title function_">println</span>(<span class="string">"[TestInstantiationAwareBeanPostProcessor]&nbsp;before&nbsp;initialization&nbsp;"</span>&nbsp;+&nbsp;beanName);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;bean;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="title class_">Object</span>&nbsp;<span class="title function_">postProcessAfterInitialization</span>(<span class="title class_">Object</span>&nbsp;bean,&nbsp;<span class="title class_">String</span>&nbsp;beanName)&nbsp;throws&nbsp;<span class="title class_">BeansException</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title class_">System</span>.<span class="property">out</span>.<span class="title function_">println</span>(<span class="string">"[TestInstantiationAwareBeanPostProcessor]&nbsp;after&nbsp;initialization&nbsp;"</span>&nbsp;+&nbsp;beanName);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;bean;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="title class_">Object</span>&nbsp;<span class="title function_">postProcessBeforeInstantiation</span>(<span class="title class_">Class</span>&lt;?&gt;&nbsp;beanClass,&nbsp;<span class="title class_">String</span>&nbsp;beanName)&nbsp;throws&nbsp;<span class="title class_">BeansException</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title class_">System</span>.<span class="property">out</span>.<span class="title function_">println</span>(<span class="string">"[TestInstantiationAwareBeanPostProcessor]&nbsp;before&nbsp;instantiation&nbsp;"</span>&nbsp;+&nbsp;beanName);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;<span class="literal">null</span>;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="built_in">boolean</span>&nbsp;<span class="title function_">postProcessAfterInstantiation</span>(<span class="title class_">Object</span>&nbsp;bean,&nbsp;<span class="title class_">String</span>&nbsp;beanName)&nbsp;throws&nbsp;<span class="title class_">BeansException</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title class_">System</span>.<span class="property">out</span>.<span class="title function_">println</span>(<span class="string">"[TestInstantiationAwareBeanPostProcessor]&nbsp;after&nbsp;instantiation&nbsp;"</span>&nbsp;+&nbsp;beanName);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;<span class="literal">true</span>;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="title class_">PropertyValues</span>&nbsp;<span class="title function_">postProcessPropertyValues</span>(<span class="title class_">PropertyValues</span>&nbsp;pvs,&nbsp;<span class="title class_">PropertyDescriptor</span>[]&nbsp;pds,&nbsp;<span class="title class_">Object</span>&nbsp;bean,&nbsp;<span class="title class_">String</span>&nbsp;beanName)&nbsp;throws&nbsp;<span class="title class_">BeansException</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title class_">System</span>.<span class="property">out</span>.<span class="title function_">println</span>(<span class="string">"[TestInstantiationAwareBeanPostProcessor]&nbsp;postProcessPropertyValues&nbsp;"</span>&nbsp;+&nbsp;beanName);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;pvs;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="7、SmartInstantiationAwareBeanPostProcessor"><a href="#7、SmartInstantiationAwareBeanPostProcessor" class="headerlink" title="7、SmartInstantiationAwareBeanPostProcessor"></a><strong>7、SmartInstantiationAwareBeanPostProcessor</strong></h3><blockquote>
+<p>org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor</p>
+</blockquote>
+<p>该扩展接口有3个触发点方法：</p>
+<ul>
+<li><code>predictBeanType</code>：该触发点发生在<code>postProcessBeforeInstantiation</code>之前(在图上并没有标明，因为一般不太需要扩展这个点)，这个方法用于预测Bean的类型，返回第一个预测成功的Class类型，如果不能预测返回null；当你调用<code>BeanFactory.getType(name)</code>时当通过bean的名字无法得到bean类型信息时就调用该回调方法来决定类型信息。</li>
+<li><code>determineCandidateConstructors</code>：该触发点发生在<code>postProcessBeforeInstantiation</code>之后，用于确定该bean的构造函数之用，返回的是该bean的所有构造函数列表。用户可以扩展这个点，来自定义选择相应的构造器来实例化这个bean。</li>
+<li><code>getEarlyBeanReference</code>：该触发点发生在<code>postProcessAfterInstantiation</code>之后，当有循环依赖的场景，当bean实例化好之后，为了防止有循环依赖，会提前暴露回调方法，用于bean实例化的后置处理。这个方法就是在提前暴露的回调方法中触发。</li>
+</ul>
+<p>扩展方式为：</p>
+<figure class="highlight kotlin"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestSmartInstantiationAwareBeanPostProcessor</span>&nbsp;<span class="title">implements</span>&nbsp;<span class="title">SmartInstantiationAwareBeanPostProcessor</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;Class&lt;?&gt;&nbsp;predictBeanType(Class&lt;?&gt;&nbsp;beanClass,&nbsp;String&nbsp;beanName)&nbsp;throws&nbsp;BeansException&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.<span class="keyword">out</span>.println(<span class="string">"[TestSmartInstantiationAwareBeanPostProcessor]&nbsp;predictBeanType&nbsp;"</span>&nbsp;+&nbsp;beanName);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;beanClass;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;Constructor&lt;?&gt;[]&nbsp;determineCandidateConstructors(Class&lt;?&gt;&nbsp;beanClass,&nbsp;String&nbsp;beanName)&nbsp;throws&nbsp;BeansException&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.<span class="keyword">out</span>.println(<span class="string">"[TestSmartInstantiationAwareBeanPostProcessor]&nbsp;determineCandidateConstructors&nbsp;"</span>&nbsp;+&nbsp;beanName);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;<span class="literal">null</span>;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;Object&nbsp;getEarlyBeanReference(Object&nbsp;bean,&nbsp;String&nbsp;beanName)&nbsp;throws&nbsp;BeansException&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.<span class="keyword">out</span>.println(<span class="string">"[TestSmartInstantiationAwareBeanPostProcessor]&nbsp;getEarlyBeanReference&nbsp;"</span>&nbsp;+&nbsp;beanName);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;bean;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="8、BeanFactoryAware"><a href="#8、BeanFactoryAware" class="headerlink" title="8、BeanFactoryAware"></a><strong>8、BeanFactoryAware</strong></h3><blockquote>
+<p>org.springframework.beans.factory.BeanFactoryAware</p>
+</blockquote>
+<p>这个类只有一个触发点，发生在bean的实例化之后，注入属性之前，也就是Setter之前。这个类的扩展点方法为<code>setBeanFactory</code>，可以拿到<code>BeanFactory</code>这个属性。</p>
+<p>使用场景为，你可以在bean实例化之后，但还未初始化之前，拿到&nbsp;<code>BeanFactory</code>，在这个时候，可以对每个bean作特殊化的定制。也或者可以把<code>BeanFactory</code>拿到进行缓存，日后使用。</p>
+<p>扩展方式为：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestBeanFactoryAware</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">BeanFactoryAware</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="type">void</span>&nbsp;<span class="title function_">setBeanFactory</span><span class="params">(BeanFactory&nbsp;beanFactory)</span>&nbsp;<span class="keyword">throws</span>&nbsp;BeansException&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<span class="string">"[TestBeanFactoryAware]&nbsp;"</span>&nbsp;+&nbsp;beanFactory.getBean(TestBeanFactoryAware.class).getClass().getSimpleName());&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="9、ApplicationContextAwareProcessor"><a href="#9、ApplicationContextAwareProcessor" class="headerlink" title="9、ApplicationContextAwareProcessor"></a><strong>9、ApplicationContextAwareProcessor</strong></h3><blockquote>
+<p>org.springframework.context.support.ApplicationContextAwareProcessor</p>
+</blockquote>
+<p>该类本身并没有扩展点，但是该类内部却有6个扩展点可供实现 ，这些类触发的时机在bean实例化之后，初始化之前</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/9f6baac8cba04012b44b0c496402bcb2~tplv-k3u1fbpfcp-zoom-in-crop-mark:1512:0:0:0.awebp#?w=640&amp;h=308&amp;e=jpg&amp;b=2c2b2b" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="640" height="308" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[19.975,3.1627,20.0304,1]}" data-stellar-image-source="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/9f6baac8cba04012b44b0c496402bcb2~tplv-k3u1fbpfcp-zoom-in-crop-mark:1512:0:0:0.awebp#?w=640&amp;h=308&amp;e=jpg&amp;b=2c2b2b"></p>
+<p>可以看到，该类用于执行各种驱动接口，在bean实例化之后，属性填充之后，通过执行以上红框标出的扩展接口，来获取对应容器的变量。<strong>所以这里应该来说是有6个扩展点</strong>，这里就放一起来说了</p>
+<ul>
+<li><code>EnvironmentAware</code>：用于获取<code>EnviromentAware</code>的一个扩展类，这个变量非常有用， 可以获得系统内的所有参数。当然个人认为这个Aware没必要去扩展，因为spring内部都可以通过注入的方式来直接获得。</li>
+<li><code>EmbeddedValueResolverAware</code>：用于获取<code>StringValueResolver</code>的一个扩展类，&nbsp;<code>StringValueResolver</code>用于获取基于<code>String</code>类型的properties的变量，一般我们都用<code>@Value</code>的方式去获取，如果实现了这个Aware接口，把<code>StringValueResolver</code>缓存起来，通过这个类去获取<code>String</code>类型的变量，效果是一样的。</li>
+<li><code>ResourceLoaderAware</code>：用于获取<code>ResourceLoader</code>的一个扩展类，<code>ResourceLoader</code>可以用于获取classpath内所有的资源对象，可以扩展此类来拿到<code>ResourceLoader</code>对象。</li>
+<li><code>ApplicationEventPublisherAware</code>：用于获取<code>ApplicationEventPublisher</code>的一个扩展类，<code>ApplicationEventPublisher</code>可以用来发布事件，结合<code>ApplicationListener</code>来共同使用，下文在介绍<code>ApplicationListener</code>时会详细提到。这个对象也可以通过spring注入的方式来获得。</li>
+<li><code>MessageSourceAware</code>：用于获取<code>MessageSource</code>的一个扩展类，<code>MessageSource</code>主要用来做国际化。</li>
+<li><code>ApplicationContextAware</code>：用来获取<code>ApplicationContext</code>的一个扩展类，<code>ApplicationContext</code>应该是很多人非常熟悉的一个类了，就是spring上下文管理器，可以手动的获取任何在spring上下文注册的bean，我们经常扩展这个接口来缓存spring上下文，包装成静态方法。同时<code>ApplicationContext</code>也实现了<code>BeanFactory</code>，<code>MessageSource</code>，<code>ApplicationEventPublisher</code>等接口，也可以用来做相关接口的事情。</li>
+</ul>
+<h3 id="10、BeanNameAware"><a href="#10、BeanNameAware" class="headerlink" title="10、BeanNameAware"></a><strong>10、BeanNameAware</strong></h3><blockquote>
+<p>org.springframework.beans.factory.BeanNameAware</p>
+</blockquote>
+<p>可以看到，这个类也是Aware扩展的一种，触发点在bean的初始化之前，也就是<code>postProcessBeforeInitialization</code>之前，这个类的触发点方法只有一个：<code>setBeanName</code></p>
+<p>使用场景为：用户可以扩展这个点，在初始化bean之前拿到spring容器中注册的的beanName，来自行修改这个beanName的值。</p>
+<p>扩展方式为：</p>
+<figure class="highlight csharp"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title">NormalBeanA</span>&nbsp;<span class="title">implements</span>&nbsp;<span class="title">BeanNameAware</span>{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="function"><span class="keyword">public</span>&nbsp;<span class="title">NormalBeanA</span>()</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.<span class="keyword">out</span>.println(<span class="string">"NormalBean&nbsp;constructor"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;@Override&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="function"><span class="keyword">public</span>&nbsp;<span class="keyword">void</span>&nbsp;<span class="title">setBeanName</span>(<span class="params">String&nbsp;name</span>)</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.<span class="keyword">out</span>.println(<span class="string">"[BeanNameAware]&nbsp;"</span>&nbsp;+&nbsp;name);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="11、-PostConstruct"><a href="#11、-PostConstruct" class="headerlink" title="11、@PostConstruct"></a><strong>11、@PostConstruct</strong></h3><blockquote>
+<p>javax.annotation.PostConstruct</p>
+</blockquote>
+<p>这个并不算一个扩展点，其实就是一个标注。其作用是在bean的初始化阶段，如果对一个方法标注了<code>@PostConstruct</code>，会先调用这个方法。这里重点是要关注下这个标准的触发点，这个触发点是在<code>postProcessBeforeInitialization</code>之后，<code>InitializingBean.afterPropertiesSet</code>之前。</p>
+<p>使用场景：用户可以对某一方法进行标注，来进行初始化某一个属性</p>
+<p>扩展方式为：</p>
+<figure class="highlight csharp"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title">NormalBeanA</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="function"><span class="keyword">public</span>&nbsp;<span class="title">NormalBeanA</span>()</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.<span class="keyword">out</span>.println(<span class="string">"NormalBean&nbsp;constructor"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;@PostConstruct&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="function"><span class="keyword">public</span>&nbsp;<span class="keyword">void</span>&nbsp;<span class="title">init</span>()</span>{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.<span class="keyword">out</span>.println(<span class="string">"[PostConstruct]&nbsp;NormalBeanA"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="12、InitializingBean"><a href="#12、InitializingBean" class="headerlink" title="12、InitializingBean"></a><strong>12、InitializingBean</strong></h3><blockquote>
+<p>org.springframework.beans.factory.InitializingBean</p>
+</blockquote>
+<p>这个类，顾名思义，也是用来初始化bean的。<code>InitializingBean</code>接口为bean提供了初始化方法的方式，它只包括<code>afterPropertiesSet</code>方法，凡是继承该接口的类，在初始化bean的时候都会执行该方法。这个扩展点的触发时机在<code>postProcessAfterInitialization</code>之前。</p>
+<p>使用场景：用户实现此接口，来进行系统启动的时候一些业务指标的初始化工作。</p>
+<p>扩展方式为：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">NormalBeanA</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">InitializingBean</span>{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="type">void</span>&nbsp;<span class="title function_">afterPropertiesSet</span><span class="params">()</span>&nbsp;<span class="keyword">throws</span>&nbsp;Exception&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<span class="string">"[InitializingBean]&nbsp;NormalBeanA"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="13、FactoryBean"><a href="#13、FactoryBean" class="headerlink" title="13、FactoryBean"></a><strong>13、FactoryBean</strong></h3><blockquote>
+<p>org.springframework.beans.factory.FactoryBean</p>
+</blockquote>
+<p>一般情况下，Spring通过反射机制利用bean的class属性指定支线类去实例化bean，在某些情况下，实例化Bean过程比较复杂，如果按照传统的方式，则需要在bean中提供大量的配置信息。配置方式的灵活性是受限的，这时采用编码的方式可能会得到一个简单的方案。Spring为此提供了一个<code>org.springframework.bean.factory.FactoryBean</code>的工厂类接口，用户可以通过实现该接口定制实例化Bean的逻辑。</p>
+<p><code>FactoryBean</code>接口对于Spring框架来说占用重要的地位，Spring自身就提供了70多个<code>FactoryBean</code>的实现。它们隐藏了实例化一些复杂bean的细节，给上层应用带来了便利。从Spring3.0开始，<code>FactoryBean</code>开始支持泛型，即接口声明改为<code>FactoryBean&lt;T&gt;</code>的形式</p>
+<p>使用场景：用户可以扩展这个类，来为要实例化的bean作一个代理，比如为该对象的所有的方法作一个拦截，在调用前后输出一行log，模仿<code>ProxyFactoryBean</code>的功能。</p>
+<p>扩展方式为：</p>
+<figure class="highlight typescript"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestFactoryBean</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">FactoryBean</span>&lt;<span class="title class_">TestFactoryBean</span>.<span class="property">TestFactoryInnerBean</span>&gt;&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="title class_">TestFactoryBean</span>.<span class="property">TestFactoryInnerBean</span>&nbsp;<span class="title function_">getObject</span>()&nbsp;throws&nbsp;<span class="title class_">Exception</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title class_">System</span>.<span class="property">out</span>.<span class="title function_">println</span>(<span class="string">"[FactoryBean]&nbsp;getObject"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;<span class="keyword">new</span>&nbsp;<span class="title class_">TestFactoryBean</span>.<span class="title class_">TestFactoryInnerBean</span>();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="title class_">Class</span>&lt;?&gt;&nbsp;<span class="title function_">getObjectType</span>(<span class="params"></span>)&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;<span class="title class_">TestFactoryBean</span>.<span class="property">TestFactoryInnerBean</span>.<span class="property">class</span>;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="built_in">boolean</span>&nbsp;<span class="title function_">isSingleton</span>(<span class="params"></span>)&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">return</span>&nbsp;<span class="literal">true</span>;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="keyword">static</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestFactoryInnerBean</span>{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="14、SmartInitializingSingleton"><a href="#14、SmartInitializingSingleton" class="headerlink" title="14、SmartInitializingSingleton"></a><strong>14、SmartInitializingSingleton</strong></h3><blockquote>
+<p>org.springframework.beans.factory.SmartInitializingSingleton</p>
+</blockquote>
+<p>这个接口中只有一个方法<code>afterSingletonsInstantiated</code>，其作用是是 在spring容器管理的所有单例对象（非懒加载对象）初始化完成之后调用的回调接口。其触发时机为<code>postProcessAfterInitialization</code>之后。</p>
+<p>使用场景：用户可以扩展此接口在对所有单例对象初始化完毕后，做一些后置的业务处理。</p>
+<p>扩展方式为：</p>
+<figure class="highlight typescript"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestSmartInitializingSingleton</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">SmartInitializingSingleton</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="built_in">void</span>&nbsp;<span class="title function_">afterSingletonsInstantiated</span>(<span class="params"></span>)&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="title class_">System</span>.<span class="property">out</span>.<span class="title function_">println</span>(<span class="string">"[TestSmartInitializingSingleton]"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="15、CommandLineRunner"><a href="#15、CommandLineRunner" class="headerlink" title="15、CommandLineRunner"></a><strong>15、CommandLineRunner</strong></h3><blockquote>
+<p>org.springframework.boot.CommandLineRunner</p>
+</blockquote>
+<p>这个接口也只有一个方法：<code>run(String... args)</code>，触发时机为整个项目启动完毕后，自动执行。如果有多个<code>CommandLineRunner</code>，可以利用<code>@Order</code>来进行排序。</p>
+<p>使用场景：用户扩展此接口，进行启动项目之后一些业务的预处理。</p>
+<p>扩展方式为：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">TestCommandLineRunner</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">CommandLineRunner</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="type">void</span>&nbsp;<span class="title function_">run</span><span class="params">(String...&nbsp;args)</span>&nbsp;<span class="keyword">throws</span>&nbsp;Exception&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<span class="string">"[TestCommandLineRunner]"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="16、DisposableBean"><a href="#16、DisposableBean" class="headerlink" title="16、DisposableBean"></a><strong>16、DisposableBean</strong></h3><blockquote>
+<p>org.springframework.beans.factory.DisposableBean</p>
+</blockquote>
+<p>这个扩展点也只有一个方法：<code>destroy()</code>，其触发时机为当此对象销毁时，会自动执行这个方法。比如说运行<code>applicationContext.registerShutdownHook</code>时，就会触发这个方法。</p>
+<p>扩展方式为：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span>&nbsp;<span class="keyword">class</span>&nbsp;<span class="title class_">NormalBeanA</span>&nbsp;<span class="keyword">implements</span>&nbsp;<span class="title class_">DisposableBean</span>&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="meta">@Override</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">public</span>&nbsp;<span class="type">void</span>&nbsp;<span class="title function_">destroy</span><span class="params">()</span>&nbsp;<span class="keyword">throws</span>&nbsp;Exception&nbsp;{&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;System.out.println(<span class="string">"[DisposableBean]&nbsp;NormalBeanA"</span>);&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line">}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<h3 id="17、ApplicationListener"><a href="#17、ApplicationListener" class="headerlink" title="17、ApplicationListener"></a><strong>17、ApplicationListener</strong></h3><blockquote>
+<p>org.springframework.context.ApplicationListener</p>
+</blockquote>
+<p>准确的说，这个应该不算<code>spring&amp;springboot</code>当中的一个扩展点，<code>ApplicationListener</code>可以监听某个事件的<code>event</code>，触发时机可以穿插在业务方法执行过程中，用户可以自定义某个业务事件。</p>
+<p>但是spring内部也有一些内置事件，这种事件，可以穿插在启动调用中。我们也可以利用这个特性，来自己做一些内置事件的监听器来达到和前面一些触发点大致相同的事情。</p>
+<p>接下来罗列下spring主要的内置事件：</p>
+<ul>
+<li><p><strong>ContextRefreshedEvent</strong></p>
+<p>ApplicationContext 被初始化或刷新时，该事件被发布。这也可以在<code>ConfigurableApplicationContext</code>接口中使用&nbsp;<code>refresh()</code>方法来发生。此处的初始化是指：所有的Bean被成功装载，后处理Bean被检测并激活，所有Singleton Bean 被预实例化，<code>ApplicationContext</code>容器已就绪可用。</p>
+</li>
+<li><p><strong>ContextStartedEvent</strong></p>
+<p>当使用&nbsp;<code>ConfigurableApplicationContext</code>&nbsp;（ApplicationContext子接口）接口中的&nbsp;<code>start()</code>&nbsp;方法启动&nbsp;<code>ApplicationContext</code>时，该事件被发布。你可以调查你的数据库，或者你可以在接受到这个事件后重启任何停止的应用程序。</p>
+</li>
+<li><p><strong>ContextStoppedEvent</strong></p>
+<p>当使用&nbsp;<code>ConfigurableApplicationContext</code>接口中的&nbsp;<code>stop()</code>停止<code>ApplicationContext</code>&nbsp;时，发布这个事件。你可以在接受到这个事件后做必要的清理的工作</p>
+</li>
+<li><p><strong>ContextClosedEvent</strong></p>
+<p>当使用&nbsp;<code>ConfigurableApplicationContext</code>接口中的&nbsp;<code>close()</code>方法关闭&nbsp;<code>ApplicationContext</code>&nbsp;时，该事件被发布。一个已关闭的上下文到达生命周期末端；它不能被刷新或重启</p>
+</li>
+<li><p><strong>RequestHandledEvent</strong></p>
+<p>这是一个 web-specific 事件，告诉所有 bean HTTP 请求已经被服务。只能应用于使用DispatcherServlet的Web应用。在使用Spring作为前端的MVC控制器时，当Spring处理用户请求结束后，系统会自动触发该事件</p>
+</li>
+</ul>
+<h3 id="18、最后"><a href="#18、最后" class="headerlink" title="18、最后"></a><strong>18、最后</strong></h3><p>我们从这些<code>spring&amp;springboot</code>的扩展点当中，大致可以窥视到整个bean的生命周期。在业务开发或者写中间件业务的时候，可以合理利用spring提供给我们的扩展点，在spring启动的各个阶段内做一些事情。以达到自定义初始化的目的。</p>
+</article>
+
+
+
+  <div class="article-share slide-up" id="share">
+    <div class="body">
+      <div class="social-wrap dis-select"><a class="social share-item qrcode ui-interactive is-icon-only" onclick="util.toggle(&quot;share-qrcode&quot;)" aria-label="分享文章: QR Code" title="分享文章: QR Code"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M10.553 13.447c-.424-.424-.95-.596-1.535-.675c-.553-.074-1.25-.074-2.086-.074H5.827c-.58 0-1.065 0-1.459.037c-.411.04-.795.124-1.146.34c-.345.21-.634.5-.845.844c-.216.352-.3.735-.34 1.147C2 15.459 2 15.944 2 16.525v.068c0 .884 0 1.597.055 2.17c.056.592.175 1.108.459 1.571c.288.47.682.864 1.152 1.152c.463.284.979.403 1.57.46C5.81 22 6.524 22 7.407 22h.07c.58 0 1.064 0 1.458-.037c.412-.04.795-.124 1.147-.34c.344-.21.633-.5.844-.844c.216-.352.3-.736.34-1.147c.037-.394.037-.879.037-1.46v-1.104c0-.836 0-1.533-.074-2.086c-.079-.584-.251-1.111-.675-1.535m-1.62-11.41c.412.04.795.124 1.147.34c.344.21.633.5.844.845c.216.351.3.735.34 1.146c.037.394.037.879.037 1.46v1.104c0 .836 0 1.533-.074 2.086c-.079.584-.251 1.111-.675 1.535s-.95.596-1.535.675c-.553.074-1.25.074-2.086.074H5.827c-.58 0-1.065 0-1.459-.037c-.411-.04-.795-.124-1.146-.34a2.56 2.56 0 0 1-.845-.844c-.216-.352-.3-.735-.34-1.147C2 8.54 2 8.056 2 7.475v-.068c0-.884 0-1.597.055-2.17c.056-.592.175-1.108.459-1.571c.288-.47.682-.864 1.152-1.152c.463-.284.979-.403 1.57-.46C5.81 2 6.524 2 7.407 2h.07c.58 0 1.064 0 1.458.037M16.593 2h-.068c-.58 0-1.065 0-1.46.037c-.41.04-.794.124-1.146.34c-.344.21-.633.5-.844.845c-.216.351-.3.735-.34 1.146c-.037.394-.037.879-.037 1.46v1.104c0 .836 0 1.533.074 2.086c.079.584.251 1.111.675 1.535s.95.596 1.535.675c.553.074 1.25.074 2.086.074h1.105c.58 0 1.065 0 1.459-.037c.411-.04.795-.124 1.146-.34c.345-.21.634-.5.845-.844c.216-.352.3-.735.34-1.147C22 8.54 22 8.056 22 7.475v-.068c0-.884 0-1.597-.055-2.17c-.056-.592-.175-1.108-.459-1.571a3.5 3.5 0 0 0-1.152-1.152c-.463-.284-.979-.403-1.57-.46C18.19 2 17.477 2 16.594 2" opacity=".5"></path><path fill="currentColor" d="M14.093 21.302a.698.698 0 1 1-1.396 0v-2.79h1.396z" opacity=".4"></path><path fill="currentColor" d="M21.302 12.698a.7.7 0 0 0-.697.697v3.256H22v-3.256a.7.7 0 0 0-.698-.697" opacity=".5"></path><path fill="currentColor" d="M16.076 16.617c-.076.184-.076.417-.076.883s0 .699.076.883a1 1 0 0 0 .541.54c.184.077.417.077.883.077s.699 0 .883-.076a1 1 0 0 0 .54-.541c.077-.184.077-.417.077-.883s0-.699-.076-.883a1 1 0 0 0-.541-.54C18.199 16 17.966 16 17.5 16s-.699 0-.883.076a1 1 0 0 0-.54.541"></path><path fill="currentColor" d="M22 18.535v-.023h-1.396c0 .443 0 .74-.016.97c-.015.224-.043.333-.073.405a1.16 1.16 0 0 1-.629.63c-.072.029-.18.056-.405.072c-.23.015-.527.016-.97.016h-1.86V22h1.883c.414 0 .759 0 1.042-.02a2.6 2.6 0 0 0 .844-.175a2.56 2.56 0 0 0 1.384-1.384c.112-.27.156-.549.176-.844c.02-.283.02-.628.02-1.042" opacity=".7"></path><path fill="currentColor" d="M12.697 16.616v.035h1.396c0-.668 0-1.116.035-1.458c.034-.33.093-.482.16-.583a1.2 1.2 0 0 1 .321-.32c.101-.068.254-.128.584-.161c.342-.035.79-.036 1.458-.036h1.86v-1.395h-1.896c-.623 0-1.142 0-1.563.043c-.44.044-.85.142-1.218.388c-.28.187-.519.426-.706.706c-.246.368-.343.777-.388 1.217c-.043.421-.043.94-.043 1.564" opacity=".6"></path><path fill="currentColor" d="M5.508 18.69c.219.155.528.155 1.146.155c.619 0 .928 0 1.146-.155a.8.8 0 0 0 .2-.199c.154-.218.154-.527.154-1.146s0-.927-.155-1.146A.8.8 0 0 0 7.8 16c-.218-.155-.527-.155-1.146-.155s-.927 0-1.146.155a.8.8 0 0 0-.199.2c-.155.218-.155.527-.155 1.145c0 .619 0 .928.155 1.146a.8.8 0 0 0 .2.2M6.654 8.155c-.618 0-.927 0-1.146-.155a.8.8 0 0 1-.199-.2c-.155-.217-.155-.527-.155-1.145c0-.619 0-.928.155-1.146a.8.8 0 0 1 .2-.2c.218-.154.527-.154 1.145-.154c.619 0 .928 0 1.146.155a.8.8 0 0 1 .2.199c.154.218.154.527.154 1.146s0 .928-.155 1.146A.8.8 0 0 1 7.8 8c-.218.155-.527.155-1.146.155M16.2 8c.218.155.527.155 1.146.155s.927 0 1.146-.155a.8.8 0 0 0 .199-.199c.155-.218.155-.528.155-1.146c0-.619 0-.928-.155-1.146a.8.8 0 0 0-.2-.2c-.218-.154-.527-.154-1.145-.154c-.619 0-.928 0-1.146.155a.8.8 0 0 0-.2.199c-.154.218-.154.527-.154 1.146s0 .928.155 1.146A.8.8 0 0 0 16.2 8"></path></svg></span></a><a class="social share-item weibo ui-interactive is-icon-only" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FSpringBoot%2520%25E6%2589%25A9%25E5%25B1%2595%25E6%258E%25A5%25E5%258F%25A3%2F&amp;title=SpringBoot%20%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;summary=1%E3%80%81%E8%83%8C%E6%99%AFSpring%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3%E5%B0%B1%E6%98%AF%E5%AE%B9%E5%99%A8%EF%BC%8C%E5%BD%93%E5%AE%B9%E5%99%A8refresh%E7%9A%84%E6%97%B6%E5%80%99%EF%BC%8C%E5%A4%96%E9%83%A8%E7%9C%8B%E4%B8%8A%E5%8E%BB%E9%A3%8E%E5%B9%B3%E6%B5%AA%E9%9D%99%EF%BC%8C%E5%85%B6%E5%AE%9E%E5%86%85%E9%83%A8%E5%88%99%E6%98%AF%E4%B8%80%E7%89%87%E6%83%8A%E6%B6%9B%E9%AA%87%E6%B5%AA%EF%BC%8C%E6%B1%AA%E6%B4%8B%E4%B8%80%E7%89%87%E3%80%82Springboot%E6%9B%B4%E6%98%AF%E5%B0%81%E8%A3%85%E4%BA%86Spring%EF%BC%8C%E9%81%B5%E5%BE%AA%E7%BA%A6%E5%AE%9A%E5%A4%A7%E4%BA%8E%E9%85%8D%E7%BD%AE%EF%BC%8C%E5%8A%A0%E4%B8%8A%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E7%9A%84%E6%9C%BA%E5%88%B6%E3%80%82%E5%BE%88%E5%A4%9A%E6%97%B6%E5%80%99%E6%88%91%E4%BB%AC%E5%8F%AA%E8%A6%81%E5%BC%95%E7%94%A8%E4%BA%86%E4%B8%80%E4%B8%AA%E4%BE%9D..." target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Weibo" title="分享文章: Weibo"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.737 5.439l-.002.004zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.18.601l.014-.028zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.57-.18-.405-.615.375-.977.42-1.804 0-2.404-.781-1.112-2.915-1.053-5.364-.03 0 0-.766.331-.571-.271.376-1.217.315-2.224-.27-2.809-1.338-1.337-4.869.045-7.888 3.08C1.309 10.87 0 13.273 0 15.348c0 3.981 5.099 6.395 10.086 6.395 6.536 0 10.888-3.801 10.888-6.82 0-1.822-1.547-2.854-2.915-3.284v.01zm1.908-5.092c-.766-.856-1.908-1.187-2.96-.962-.436.09-.706.511-.616.932.09.42.511.691.932.602.511-.105 1.067.044 1.442.465.376.421.466.977.316 1.473-.136.406.089.856.51.992.405.119.857-.105.992-.512.33-1.021.12-2.178-.646-3.035l.03.045zm2.418-2.195c-1.576-1.757-3.905-2.419-6.054-1.968-.496.104-.812.587-.706 1.081.104.496.586.813 1.082.707 1.532-.331 3.185.15 4.296 1.383 1.112 1.246 1.429 2.943.947 4.416-.165.48.106 1.007.586 1.157.479.165.991-.104 1.157-.586.675-2.088.241-4.478-1.338-6.235l.03.045z"></path></svg></span></a><a class="social share-item x ui-interactive is-icon-only" href="https://x.com/intent/tweet?text=SpringBoot%20%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FSpringBoot%2520%25E6%2589%25A9%25E5%25B1%2595%25E6%258E%25A5%25E5%258F%25A3%2F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: X" title="分享文章: X"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M14.234 10.162L22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299l-.929-1.329L3.076 1.56h3.182l5.965 8.532l.929 1.329l7.754 11.09h-3.182z"></path></svg></span></a><a class="social share-item telegram ui-interactive is-icon-only" href="https://t.me/share/url?url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FSpringBoot%2520%25E6%2589%25A9%25E5%25B1%2595%25E6%258E%25A5%25E5%258F%25A3%2F&amp;text=SpringBoot%20%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Telegram" title="分享文章: Telegram"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"></path></svg></span></a><a class="social share-item email ui-interactive is-icon-only" href="mailto:?subject=SpringBoot%20%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;body=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FSpringBoot%2520%25E6%2589%25A9%25E5%25B1%2595%25E6%258E%25A5%25E5%258F%25A3%2F" aria-label="分享文章: Email" title="分享文章: Email"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M3.172 5.172C2 6.343 2 8.229 2 12s0 5.657 1.172 6.828C4.343 20 6.229 20 10 20h4c3.771 0 5.657 0 6.828-1.172C22 17.657 22 15.771 22 12s0-5.657-1.172-6.828C19.657 4 17.771 4 14 4h-4C6.229 4 4.343 4 3.172 5.172m15.404 2.348a.75.75 0 0 1-.096 1.056l-2.196 1.83c-.887.739-1.605 1.338-2.24 1.746-.66.424-1.303.693-2.044.693s-1.384-.269-2.045-.693c-.634-.408-1.352-1.007-2.239-1.745L5.52 8.576a.75.75 0 1 1 .96-1.152l2.159 1.799c.933.777 1.58 1.315 2.128 1.667.529.34.888.455 1.233.455s.704-.115 1.233-.455c.547-.352 1.195-.89 2.128-1.667l2.159-1.8a.75.75 0 0 1 1.056.097" clip-rule="evenodd"></path></svg></span></a></div>
+      <div class="share-qrcode" id="share-qrcode" style="opacity:0;height:0"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&amp;data=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FSpringBoot%2520%25E6%2589%25A9%25E5%25B1%2595%25E6%258E%25A5%25E5%258F%25A3%2F" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></div>
+    </div>
+  </div>
+
+
+
+<div class="related-wrap slide-up" id="read-next"><section class="body"><div class="item" id="prev"><div class="note"><svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-left" aria-hidden="true"></svg> 较新文章</div><a href="/post/JAVA/%E4%BB%8E%20apache-common-pool%20%E7%9C%8B%E5%A6%82%E4%BD%95%E5%86%99%E4%B8%80%E4%B8%AA%E9%80%9A%E7%94%A8%E6%B1%A0/">从 apache-common-pool 看如何写一个通用池</a></div><div class="item" id="next"><div class="note">较早文章 <svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-right" aria-hidden="true"></svg></div><a href="/post/JAVA/C2%20CompilerThread9%20%E9%95%BF%E6%97%B6%E9%97%B4%E5%8D%A0%E7%94%A8CPU%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/">C2 CompilerThread9 长时间占用CPU解决方案</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer slide-up footnote"><hr><div class="text"><p>本站由 <a href="/">dandeliono</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0">Stellar 2.0.0</a> 主题创建。<br>文章多为学习与工作中的笔记和转载整理,版权归原作者所有。</p>
+</div></footer>
+</main>
+<aside data-stellar-runtime-region="" id="rightbar-region" class="site-region site-region--rightbar" data-region="rightbar" aria-label="Rightbar"><div class="site-region__surface ui-drawer-surface"><div class="site-region__viewport"><div class="widgets widget-stack widget-stack--rightbar widget-stack--rightbar"><div class="widget-instance widget-instance--toc" data-widget-id="rightbar:0:toc" data-presentation="rightbar">
+
+
+<widget class="widget-wrapper slide-up toc" id="data-toc" collapse="false">
+  
+    <div class="widget-header dis-select">
+      <span class="name">本文目录</span>
+      <button type="button" class="cap-action ui-interactive card-hover card-hover--spotlight" data-shell-action="toggle-toc" aria-label="Toggle table of contents" aria-pressed="false"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg></span></button>
+    </div>
+  
+  <div class="widget-body"><ol class="toc ui-collection-adapter"><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#1%E3%80%81%E8%83%8C%E6%99%AF"><span class="toc-text">1、背景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#2%E3%80%81%E5%8F%AF%E6%89%A9%E5%B1%95%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%90%AF%E5%8A%A8%E8%B0%83%E7%94%A8%E9%A1%BA%E5%BA%8F%E5%9B%BE"><span class="toc-text">2、可扩展的接口启动调用顺序图</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#3%E3%80%81ApplicationContextInitializer"><span class="toc-text">3、ApplicationContextInitializer</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#4%E3%80%81BeanDefinitionRegistryPostProcessor"><span class="toc-text">4、BeanDefinitionRegistryPostProcessor</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#5%E3%80%81BeanFactoryPostProcessor"><span class="toc-text">5、BeanFactoryPostProcessor</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#6%E3%80%81InstantiationAwareBeanPostProcessor"><span class="toc-text">6、InstantiationAwareBeanPostProcessor</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#7%E3%80%81SmartInstantiationAwareBeanPostProcessor"><span class="toc-text">7、SmartInstantiationAwareBeanPostProcessor</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#8%E3%80%81BeanFactoryAware"><span class="toc-text">8、BeanFactoryAware</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#9%E3%80%81ApplicationContextAwareProcessor"><span class="toc-text">9、ApplicationContextAwareProcessor</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#10%E3%80%81BeanNameAware"><span class="toc-text">10、BeanNameAware</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#11%E3%80%81-PostConstruct"><span class="toc-text">11、@PostConstruct</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#12%E3%80%81InitializingBean"><span class="toc-text">12、InitializingBean</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#13%E3%80%81FactoryBean"><span class="toc-text">13、FactoryBean</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#14%E3%80%81SmartInitializingSingleton"><span class="toc-text">14、SmartInitializingSingleton</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#15%E3%80%81CommandLineRunner"><span class="toc-text">15、CommandLineRunner</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#16%E3%80%81DisposableBean"><span class="toc-text">16、DisposableBean</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#17%E3%80%81ApplicationListener"><span class="toc-text">17、ApplicationListener</span></a></li><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#18%E3%80%81%E6%9C%80%E5%90%8E"><span class="toc-text">18、最后</span></a></li></ol></div>
+  <div class="widget-footer"><a class="top ui-interactive" onclick="util.scrollTop()"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M20.536 3.464C22 4.93 22 7.286 22 12s0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464" opacity=".5"></path><path fill="currentColor" d="M9.53 12.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 9.56z"></path><path fill="currentColor" d="M9.53 16.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 13.56z"></path></svg></span><span>回到顶部</span></a></div>
+</widget>
+
+
+</div></div></div></div></aside>
+</div><button type="button" class="site-scrim" data-shell-action="dismiss-drawer" aria-label="Close navigation" tabindex="-1"></button><div data-stellar-runtime-region="" class="site-dock" role="group" aria-label="Layout panels">
+  <button type="button" class="site-dock__button site-dock__button--rightbar ui-interactive" aria-label="Open rightbar" aria-controls="rightbar-region" aria-expanded="false" data-shell-action="toggle-rightbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+  </button>
+  <button type="button" class="site-dock__button site-dock__button--leftbar ui-interactive" aria-label="Open leftbar" aria-controls="leftbar-region" aria-expanded="false" data-shell-action="toggle-leftbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"></path><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"></path></g></svg>
+  </button>
+</div>
+
+<dialog data-stellar-runtime-region="" class="search-dialog" id="site-search-dialog" aria-labelledby="site-search-title">
+  <div class="search-dialog__panel search-wrapper" id="site-search-wrapper" searching="false">
+    <div class="search-dialog__header">
+      <div class="search-form" role="search">
+        <span class="search-button" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+        <input type="search" class="search-input" id="site-search-input" aria-labelledby="site-search-title" placeholder="搜索">
+      </div>
+      <button type="button" class="search-dialog__close" data-shell-action="close-search" aria-label="关闭搜索">×</button>
+    </div>
+    
+      <div class="search-dialog__scope" role="radiogroup" aria-labelledby="site-search-title" hidden="">
+        <label class="search-dialog__scope-option" data-search-scope-option="all">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="all">
+          <span>全站</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="blog" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="blog">
+          <span>博客</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="current" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="current">
+          <span data-search-scope-current-label=""></span>
+        </label>
+      </div>
+    
+    <h2 class="search-dialog__title" id="site-search-title">站内搜索</h2>
+    <div class="search-result" id="site-search-result"></div>
+    <div class="search-no-result">没有找到内容！</div>
+  </div>
+</dialog>
+</div><div class="site-scripts">
+<script data-stellar-script="core" src="/js/stellar-icons.js?v=b068c3800a3fa93b"></script>
+
+<script data-stellar-script="defines">
+  window.canonical = window.stellarClientData.canonical;
+  const ctx = window.stellarClientData.ctx;
+  window.canonical.param = {permalink: "https://codearea.cc/post/JAVA/SpringBoot%20%E6%89%A9%E5%B1%95%E6%8E%A5%E5%8F%A3/", checklink: ctx.services.video.js};
+  ctx.date_suffix = {"just":"刚刚","min":"分钟前","hour":"小时前","day":"天前"};
+  if (ctx.search) Object.assign(ctx.search, {"more":"更多","no_more":"没有更多了"});
+  const def = window.stellarClientData.def;
+  window.ctx = ctx;
+  window.def = def;
+</script>
+
+
+<!-- core: 迁移期 DOM/资源兼容工具；Extension 注册与生命周期由 ESM runtime 所有 -->
+<script data-stellar-script="core" src="/js/utils.js?v=2.0.0"></script>
+<script data-stellar-script="core" src="/js/main.js?v=2.0.0" defer=""></script>
+<script data-stellar-script="core" defer="" src="/js/profile.js?v=2.0.0"></script>
+
+
+
+
+
+<script data-stellar-script="core" type="application/json" id="stellar-runtime-config">{"version":1,"root":"/","policy":{"cache":{"enabled":true,"defaultTtl":3600,"ttl":{"giscus":600,"waline":600,"artalk":600,"memos":600,"memos-user":86400,"sites":86400,"friends":86400,"friends_and_posts":86400,"siteinfo":86400},"maxEntries":200},"request":{"retries":2,"timeoutMs":5000,"idleTimeoutMs":3000,"maxCacheEntryBytes":204800},"features":{"codeCopyToastMs":2500},"providers":{"linkPrefetch":"flying_pages","lightbox":"fancybox","diagrams":"mermaid"}},"extensions":[{"id":"pin-slider","module":"/js/runtime/extensions/pin-slider.js","scope":"region","when":{"selector":".pin-slider"},"config":{}},{"id":"page-controls","module":"/js/runtime/extensions/page-controls.js","scope":"region","when":{"always":true},"config":{"highlight":"/js/search/highlight.js","tagtree":"/js/tagtree.js"}},{"id":"partial-navigation","module":"/js/runtime/extensions/partial-navigation.js","scope":"document","when":{"always":true},"config":{}},{"id":"color-scheme-switch","module":"/js/runtime/extensions/color-scheme-switch.js","scope":"document","when":{"always":true},"config":{"messages":{"light":"切换到浅色模式","dark":"切换到深色模式","auto":"切换到跟随系统配色"}}},{"id":"search","module":"/js/runtime/extensions/search.js","scope":"document","when":{"selector":".search-input"},"config":{"provider":"local","options":{"scope":"post","includeContent":true,"cacheTtlSeconds":86400},"assets":{"client":null,"provider":"/js/search/local-search.js","shortcut":"/js/search/shortcut.js"}}},{"id":"hero-parallax","module":"/js/runtime/extensions/hero-parallax.js","scope":"region","when":{"selector":".wiki-hero"},"config":{}},{"id":"hero-effect","module":"/js/runtime/extensions/hero-effect.js","scope":"region","when":{"selector":"canvas[data-hero-effect]"},"config":{}},{"id":"lazy-loading","module":"/js/runtime/extensions/lazy-loading.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"}},{"id":"deferred-icons","module":"/js/runtime/extensions/deferred-icons.js","scope":"region","when":{"selector":"svg.icon[data-icon]"},"config":{}},{"id":"dropdown","module":"/js/runtime/extensions/dropdown.js","scope":"region","when":{"selector":"details.dropdown"},"config":{}},{"id":"services","module":"/js/runtime/extensions/services.js","scope":"region","when":{"selector":"#artalk_container, #twikoo_container, #waline_container, .data-service, [class*='ds-'], a[cardlink], a[data-md-link][data-siteinfo-api], .site-card [data-siteinfo-api], .voice\u003eaudio, .video\u003evideo, .chat-file"},"config":{"marked":"https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js"}},{"id":"settings","module":"/js/runtime/extensions/settings.js","scope":"region","when":{"selector":".settings-page"},"config":{}},{"id":"link-prefetch","module":"/js/runtime/extensions/link-prefetch.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"}},{"id":"lightbox","module":"/js/runtime/extensions/lightbox.js","scope":"region","when":{"selector":"[data-fancybox]:not(.error), .with-fancybox, .ds-memos, .timenode p\u003eimg"},"config":{"enabled":true,"selector":".timenode p\u003eimg","assets":{"localCss":"/css/plugins/fancybox.css","js":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js","css":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"}}},{"id":"reveal","module":"/js/runtime/extensions/reveal.js","scope":"region","when":{"selector":".slide-up"},"config":{"enabled":true,"duration":800,"interval":200,"distance":8,"blur":4}},{"id":"code-copy","module":"/js/runtime/extensions/code-copy.js","scope":"region","when":{"selector":".code"},"config":{"assets":{"js":"/js/plugins/copycode.js"},"messages":{"label":"复制","copied":"复制成功","denied":"未获得剪贴板权限","unsupported":"当前浏览器不支持剪贴板或页面不是 HTTPS"}}},{"id":"adaptive-text","module":"/js/runtime/extensions/adaptive-text.js","scope":"region","when":{"selector":"[data-text-adaptive]"},"config":{"assets":{"colorJs":"/js/color.js","js":"/js/plugins/adaptive-text.js"}}},{"id":"swiper","module":"/js/runtime/extensions/swiper.js","scope":"region","when":{"selector":"#swiper-api"},"config":{"assets":{"localCss":"/css/plugins/swiper.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js","css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css"}}}]}</script>
+<script data-stellar-script="core" type="module" src="/js/runtime/index.js?v=2.0.0&amp;runtime=1"></script>
+
+
+<!-- inject -->
+
+
+<script data-stellar-script="core" defer="" src="/js/navigation-init.js?v=2.0.0"></script>
+</div>
+
+</body></html>
