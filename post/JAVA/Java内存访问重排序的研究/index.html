@@ -1,0 +1,705 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+  
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0" theme-name="Stellar" theme-version="2.0.0">
+  <link rel="canonical" href="https://codearea.cc/post/JAVA/Java内存访问重排序的研究/" data-stellar-page-meta="">
+  
+  <meta name="generator" content="Hexo 8.1.2">
+  <meta http-equiv="x-dns-prefetch-control" content="on">
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  <title data-stellar-page-meta="">Java内存访问重排序的研究 - 个人笔记</title>
+  <script data-stellar-script="core">
+    (function () {
+      var key = 'stellar:v2:leftbar-state';
+      var fallback = "expanded";
+      try {
+        var value = localStorage.getItem(key);
+        document.documentElement.dataset.leftbarState = value === 'collapsed' || value === 'expanded' ? value : fallback;
+      } catch (error) {
+        document.documentElement.dataset.leftbarState = fallback;
+      }
+    })();
+  </script>
+
+  <meta name="description" content="什么是重排序请先看这样一段代码： 12345678910111213141516171819202122public class PossibleReordering {static int x = 0, y = 0;static int a = 0, b = 0;public static void main(String[] args) throws InterruptedException" data-stellar-page-meta="">
+<meta property="og:type" content="article" data-stellar-page-meta="">
+<meta property="og:title" content="Java内存访问重排序的研究" data-stellar-page-meta="">
+<meta property="og:url" content="https://codearea.cc/post/JAVA/Java%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E7%9A%84%E7%A0%94%E7%A9%B6/" data-stellar-page-meta="">
+<meta property="og:site_name" content="个人笔记" data-stellar-page-meta="">
+<meta property="og:description" content="什么是重排序请先看这样一段代码： 12345678910111213141516171819202122public class PossibleReordering {static int x = 0, y = 0;static int a = 0, b = 0;public static void main(String[] args) throws InterruptedException" data-stellar-page-meta="">
+<meta property="og:locale" content="zh_CN" data-stellar-page-meta="">
+<meta property="og:image" content="https://raw.githubusercontent.com/dandeliono/img/main/resource/3173315025ef0c1f9e46db0b72313fd9.png" data-stellar-page-meta="">
+<meta property="article:author" content="dandeliono" data-stellar-page-meta="">
+<meta property="article:published_time" content="2021-08-15T15:36:56.000Z" data-stellar-page-meta="">
+<meta property="article:modified_time" content="2021-08-15T15:36:56.000Z" data-stellar-page-meta="">
+<meta name="twitter:card" content="summary" data-stellar-page-meta="">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/dandeliono/img/main/resource/3173315025ef0c1f9e46db0b72313fd9.png" data-stellar-page-meta=""><meta name="twitter:title" content="Java内存访问重排序的研究" data-stellar-page-meta="">
+  
+  
+  <meta name="keywords" content="Java,Linux,中间件,云原生,技术笔记" data-stellar-page-meta="">
+
+  <!-- feed -->
+  
+
+  <link rel="preload" href="/css/main.css?v=2.0.0" as="style">
+  <link rel="stylesheet" href="/css/main.css?v=2.0.0">
+  <style>:root{--text-loading:"正在加载";--text-loading-error:"加载失败，请稍后重试。"}</style>
+
+
+  
+
+  
+
+  <script type="application/ld+json" data-stellar-page-meta="">{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"dandeliono","sameAs":["https://github.com/dandeliono"]},"dateCreated":"2021-08-15T15:36:56+00:00","dateModified":"2021-08-15T15:36:56+00:00","datePublished":"2021-08-15T15:36:56+00:00","description":"什么是重排序请先看这样一段代码：\n12345678910111213141516171819202122public class PossibleReordering {static int x = 0, y = 0;static int a = 0, b = 0;public static void main(String[] args) throws InterruptedExcepti...","headline":"Java内存访问重排序的研究","mainEntityOfPage":{"@type":"WebPage","@id":"https://codearea.cc/post/JAVA/Java%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E7%9A%84%E7%A0%94%E7%A9%B6/"},"publisher":{"@type":"Organization","name":"dandeliono","sameAs":["https://github.com/dandeliono"]},"url":"https://codearea.cc/post/JAVA/Java%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E7%9A%84%E7%A0%94%E7%A9%B6/","image":["https://raw.githubusercontent.com/dandeliono/img/main/resource/3173315025ef0c1f9e46db0b72313fd9.png"],"thumbnailUrl":"https://raw.githubusercontent.com/dandeliono/img/main/resource/3173315025ef0c1f9e46db0b72313fd9.png"}</script>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-WXLPP6W80J"></script>
+<script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-WXLPP6W80J');</script>
+<script async="" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8915554050347707" crossorigin="anonymous"></script>
+
+
+  <link rel="stylesheet" href="/css/stellar-icons.css?v=7c185ad1a9a79674">
+  <link rel="preload" as="script" href="/js/stellar-icons.js?v=b068c3800a3fa93b">
+  
+  
+</head>
+<body data-page-type="content" data-page-layout="post" data-article-style="tech"><div data-stellar-runtime-region="" id="site-cover" class="site-cover"></div><div class="site-shell" id="start" data-regions="leftbar rightbar"><div class="site-workspace">
+<aside data-stellar-runtime-region="" id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="Leftbar"><div class="site-region__surface ui-surface"><div class="site-region__decoration" aria-hidden="true"></div><div class="site-region__viewport"><header class="site-region__header site-region__zone site-region__zone--top">
+    <div class="widget-instance widget-instance--brand" data-widget-id="leftbar:fixed:brand" data-presentation="leftbar" data-leftbar-rail="">
+<header class="brand-header brand-header--regular brand-header--site"><div class="brand-wrap"><a class="brand-image brand-image--avatar" href="/"><img no-lazy="" src="https://avatars.githubusercontent.com/u/29496357" alt="" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></a><a class="brand-title" href="/"><div class="brand-name">个人笔记</div><div class="brand-tagline cap">永远相信美好的事情即将发生</div></a><div class="brand-stats data-service ds-ghinfo" data-api="https://api.github.com/users/dandeliono"><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=followers"><span class="brand-stat__value" type="text" id="followers"></span><span class="brand-stat__label">followers</span></a><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=following"><span class="brand-stat__value" type="text" id="following"></span><span class="brand-stat__label">following</span></a><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=repositories"><span class="brand-stat__value" type="text" id="public_repos"></span><span class="brand-stat__label">repos</span></a></div></div><div class="brand-search">
+
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<button class="ui-collection__item ui-interactive card-hover card-hover--spotlight search-trigger has-hover-surface" type="button" title="搜索" aria-label="搜索" data-shell-action="open-search" data-search-instance="leftbar-brand-search" data-search-domain="blog" data-search-domain-label="博客" data-search-domain-blog="true">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">搜索</span>
+      
+      
+    </span>
+  
+  <kbd class="search-shortcut" aria-hidden="true">⌘K</kbd>
+
+  
+</button>
+
+  
+</div>
+
+
+</div></header>
+</div>
+  </header>
+  <div class="site-region__body site-region__zone site-region__zone--body">
+    <div class="widget-instance widget-instance--menu" data-widget-id="leftbar:fixed:menu" data-presentation="leftbar" data-leftbar-rail="">
+
+
+<nav class="menu dis-select">
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight is-active" href="/" title="近期发布" aria-current="page">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M5.879 2.879C5 3.757 5 5.172 5 8v8c0 2.828 0 4.243.879 5.121C6.757 22 8.172 22 11 22h2c2.828 0 4.243 0 5.121-.879C19 20.243 19 18.828 19 16V8c0-2.828 0-4.243-.879-5.121C17.243 2 15.828 2 13 2h-2c-2.828 0-4.243 0-5.121.879M8.25 17a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75M9 12.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM8.25 9A.75.75 0 0 1 9 8.25h6a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 9" clip-rule="evenodd"></path><path fill="currentColor" d="M5.235 4.058C5 4.941 5 6.177 5 8v8c0 1.823 0 3.058.235 3.942L5 19.924c-.975-.096-1.631-.313-2.121-.803C2 18.243 2 16.828 2 14v-4c0-2.829 0-4.243.879-5.121c.49-.49 1.146-.707 2.121-.803zm13.53 15.884C19 19.058 19 17.822 19 16V8c0-1.823 0-3.059-.235-3.942l.235.018c.975.096 1.631.313 2.121.803C22 5.757 22 7.17 22 9.999v4c0 2.83 0 4.243-.879 5.122c-.49.49-1.146.707-2.121.803z" opacity=".5"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">近期发布</span>
+      
+      
+    </span>
+  
+  
+  <span class="ui-collection__indicator"></span>
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/categories/" title="分类">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M2 6.94975C2 6.06722 2 5.62595 2.06935 5.25839C2.37464 3.64031 3.64031 2.37464 5.25839 2.06935C5.62595 2 6.06722 2 6.94975 2C7.33642 2 7.52976 2 7.71557 2.01738C8.51665 2.09229 9.27652 2.40704 9.89594 2.92051C10.0396 3.03961 10.1763 3.17633 10.4497 3.44975L11 4C11.8158 4.81578 12.2237 5.22367 12.7121 5.49543C12.9804 5.64471 13.2651 5.7626 13.5604 5.84678C14.0979 6 14.6747 6 15.8284 6H16.2021C18.8345 6 20.1506 6 21.0062 6.76946C21.0849 6.84024 21.1598 6.91514 21.2305 6.99383C22 7.84935 22 9.16554 22 11.7979V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V6.94975Z" opacity=".5"></path><path d="M20 6.23751C19.9992 5.94016 19.9949 5.76263 19.9746 5.60842C19.7974 4.26222 18.7381 3.2029 17.3919 3.02567C17.1969 3 16.9647 3 16.5003 3H9.98828C10.1042 3.10392 10.2347 3.23445 10.45 3.44975L11.0003 4C11.8161 4.81578 12.2239 5.22367 12.7124 5.49543C12.9807 5.64471 13.2653 5.7626 13.5606 5.84678C14.0982 6 14.675 6 15.8287 6H16.2024C17.9814 6 19.1593 6 20 6.23751Z"></path><path fill-rule="evenodd" d="M12.25 10C12.25 9.58579 12.5858 9.25 13 9.25H18C18.4142 9.25 18.75 9.58579 18.75 10C18.75 10.4142 18.4142 10.75 18 10.75H13C12.5858 10.75 12.25 10.4142 12.25 10Z" clip-rule="evenodd"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">分类</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/tags/" title="标签">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M10.7226 3.20068C10.8335 2.80158 10.5998 2.38817 10.2007 2.27731C9.80163 2.16645 9.38822 2.40011 9.27736 2.79921L7.76327 8.24995H4C3.58579 8.24995 3.25 8.58573 3.25 8.99995C3.25 9.41416 3.58579 9.74995 4 9.74995H7.3466L5.81882 15.2499H2C1.58579 15.2499 1.25 15.5857 1.25 15.9999C1.25 16.4142 1.58579 16.7499 2 16.7499H5.40216L4.27736 20.7992C4.1665 21.1983 4.40016 21.6117 4.79927 21.7226C5.19837 21.8334 5.61178 21.5998 5.72264 21.2007L6.95895 16.7499H14.4022L13.2774 20.7992C13.1665 21.1983 13.4002 21.6117 13.7993 21.7226C14.1984 21.8334 14.6118 21.5998 14.7226 21.2007L15.959 16.7499H20C20.4142 16.7499 20.75 16.4142 20.75 15.9999C20.75 15.5857 20.4142 15.2499 20 15.2499H16.3756L17.9034 9.74995H22C22.4142 9.74995 22.75 9.41416 22.75 8.99995C22.75 8.58573 22.4142 8.24995 22 8.24995H18.3201L19.7226 3.20068C19.8335 2.80158 19.5998 2.38817 19.2007 2.27731C18.8016 2.16645 18.3882 2.40011 18.2774 2.79921L16.7633 8.24995H9.32006L10.7226 3.20068ZM14.8188 15.2499L16.3466 9.74995H8.9034L7.37562 15.2499H14.8188Z" clip-rule="evenodd"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">标签</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/archives/" title="归档">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M6.94028 2C7.35614 2 7.69326 2.32421 7.69326 2.72414V4.18487C8.36117 4.17241 9.10983 4.17241 9.95219 4.17241H13.9681C14.8104 4.17241 15.5591 4.17241 16.227 4.18487V2.72414C16.227 2.32421 16.5641 2 16.98 2C17.3958 2 17.733 2.32421 17.733 2.72414V4.24894C19.178 4.36022 20.1267 4.63333 20.8236 5.30359C21.5206 5.97385 21.8046 6.88616 21.9203 8.27586L22 9H2.92456H2V8.27586C2.11571 6.88616 2.3997 5.97385 3.09665 5.30359C3.79361 4.63333 4.74226 4.36022 6.1873 4.24894V2.72414C6.1873 2.32421 6.52442 2 6.94028 2Z"></path><path d="M21.9995 14.0001V12.0001C21.9995 11.161 21.9963 9.66527 21.9834 9H2.00917C1.99626 9.66527 1.99953 11.161 1.99953 12.0001V14.0001C1.99953 17.7713 1.99953 19.6569 3.1711 20.8285C4.34267 22.0001 6.22829 22.0001 9.99953 22.0001H13.9995C17.7708 22.0001 19.6564 22.0001 20.828 20.8285C21.9995 19.6569 21.9995 17.7713 21.9995 14.0001Z" opacity=".5"></path><path d="M18 17C18 17.5523 17.5523 18 17 18C16.4477 18 16 17.5523 16 17C16 16.4477 16.4477 16 17 16C17.5523 16 18 16.4477 18 17Z"></path><path d="M18 13C18 13.5523 17.5523 14 17 14C16.4477 14 16 13.5523 16 13C16 12.4477 16.4477 12 17 12C17.5523 12 18 12.4477 18 13Z"></path><path d="M13 17C13 17.5523 12.5523 18 12 18C11.4477 18 11 17.5523 11 17C11 16.4477 11.4477 16 12 16C12.5523 16 13 16.4477 13 17Z"></path><path d="M13 13C13 13.5523 12.5523 14 12 14C11.4477 14 11 13.5523 11 13C11 12.4477 11.4477 12 12 12C12.5523 12 13 12.4477 13 13Z"></path><path d="M8 17C8 17.5523 7.55228 18 7 18C6.44772 18 6 17.5523 6 17C6 16.4477 6.44772 16 7 16C7.55228 16 8 16.4477 8 17Z"></path><path d="M8 13C8 13.5523 7.55228 14 7 14C6.44772 14 6 13.5523 6 13C6 12.4477 6.44772 12 7 12C7.55228 12 8 12.4477 8 13Z"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">归档</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://tools.codearea.cc" title="工具">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M14.0516 2C15.7318 1.99999 17.0627 1.99997 18.1043 2.14245C19.1762 2.28908 20.0438 2.59803 20.728 3.29418C21.4122 3.99033 21.7159 4.87308 21.86 5.9637C22 7.02342 22 8.37752 22 10.087V10.0871V13.913V13.913C22 15.6225 22 16.9766 21.86 18.0363C21.7159 19.1269 21.4122 20.0097 20.728 20.7058C20.0438 21.402 19.1762 21.7109 18.1043 21.8575C17.0627 22 15.7318 22 14.0517 22H14.0516H13.9484H13.9483C12.2681 22 10.9373 22 9.89575 21.8575C8.82382 21.7109 7.95621 21.402 7.27199 20.7058C6.58778 20.0097 6.28413 19.1269 6.14001 18.0363C5.99998 16.9766 5.99999 15.6225 6 13.913V13.9129V10.087V10.087C5.99999 8.3775 5.99998 7.02343 6.14001 5.9637C6.28413 4.87308 6.58778 3.99033 7.27199 3.29418C7.95621 2.59803 8.82382 2.28908 9.89575 2.14245C10.9373 1.99997 12.2682 1.99999 13.9484 2H13.9484H14.0516H14.0516Z" opacity=".5"></path><path d="M12 18.25C11.5858 18.25 11.25 18.5858 11.25 19C11.25 19.4142 11.5858 19.75 12 19.75H17C17.4142 19.75 17.75 19.4142 17.75 19C17.75 18.5858 17.4142 18.25 17 18.25H12Z"></path><path d="M2 14.5C2 13.0955 2 12.3933 2.33706 11.8889C2.48298 11.6705 2.67048 11.483 2.88886 11.3371C3.39331 11 4.09554 11 5.5 11C6.90446 11 7.60669 11 8.11114 11.3371C8.32952 11.483 8.51702 11.6705 8.66294 11.8889C9 12.3933 9 13.0955 9 14.5V18.5C9 19.9045 9 20.6067 8.66294 21.1111C8.51702 21.3295 8.32952 21.517 8.11114 21.6629C7.60669 22 6.90446 22 5.5 22C4.09554 22 3.39331 22 2.88886 21.6629C2.67048 21.517 2.48298 21.3295 2.33706 21.1111C2 20.6067 2 19.9045 2 18.5V14.5Z"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">工具</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div>
+
+</nav>
+
+</div>
+    <div class="widgets widget-stack widget-stack--leftbar widget-stack--body"><div class="widget-instance widget-instance--recent" data-widget-id="leftbar:1:recent" data-presentation="leftbar">
+
+<widget class="widget-wrapper slide-up recent-widget">
+  
+    <div class="widget-header dis-select">
+      <span class="name">最近更新</span>
+      
+    </div>
+  
+  <div class="widget-body"><div class="ui-collection" data-layout="list" data-variant="nav" data-density="compact">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/OpenJDK%2021%20%E5%8D%87%E7%BA%A7%E6%8C%87%E5%8D%97/" title="OpenJDK 21 升级指南">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">O</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">OpenJDK 21 升级指南</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/%E4%BD%BF%E7%94%A8%20OpenRewrite%20%E4%BC%98%E5%8C%96%E4%BB%A3%E7%A0%81/" title="使用 OpenRewrite 优化代码">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">使</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">使用 OpenRewrite 优化代码</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/Maven%20%E7%A7%81%E6%9C%8D%20Nexus%20%E5%8D%87%E7%BA%A7%E5%AE%9E%E5%BD%95/" title="Maven 私服 Nexus 升级实录">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">M</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Maven 私服 Nexus 升级实录</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/%E5%AE%9A%E5%88%B6Ubuntu%E5%AE%89%E8%A3%85%E9%95%9C%E5%83%8F%E7%9A%84%E4%B8%A4%E7%A7%8D%E6%96%B9%E6%B3%95/" title="定制Ubuntu安装镜像的两种方法">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">定</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">定制Ubuntu安装镜像的两种方法</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/%E5%B8%B8%E8%A7%81%E7%9A%84bpftrace%E8%84%9A%E6%9C%AC/" title="常见的bpftrace脚本">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">常</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">常见的bpftrace脚本</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20etc%20shadow%20%E6%96%87%E4%BB%B6%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" title="Linux /etc/shadow 文件学习笔记">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux /etc/shadow 文件学习笔记</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20%E4%B8%8B%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E4%B8%8E%E6%8A%80%E5%B7%A7%E6%B1%87%E6%80%BB/" title="Linux 下常用命令与技巧汇总">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux 下常用命令与技巧汇总</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/ATOP%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E6%80%BB%E7%BB%93/" title="ATOP工作原理总结">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">A</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">ATOP工作原理总结</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20%E6%89%A9%E5%AE%B9%20%E6%A0%B9%E5%88%86%E5%8C%BA(LVM+%E9%9D%9ELVM)/" title="Linux 扩容 / 根分区(LVM+非LVM)">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux 扩容 / 根分区(LVM+非LVM)</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/ALG/%E5%BB%B6%E8%BF%9F%E5%8F%8C%E5%88%A0%E5%A6%82%E6%AD%A4%E5%A5%BD%E7%94%A8%EF%BC%8C%E4%B8%BA%E4%BD%95%E5%A4%A7%E5%8E%82%E4%BB%8E%E6%9D%A5%E4%B8%8D%E7%94%A8Cache-aside%E4%B8%8B%E6%95%B0%E6%8D%AE%E5%8F%98%E6%9B%B4%E6%8E%A8%E8%8D%90%E4%BD%BF%E7%94%A8%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E7%9A%84%E7%AD%96%E7%95%A5%EF%BC%8C%E4%B8%BA%E9%99%8D%E4%BD%8E%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%80%E8%87%B4%E9%80%9A%E5%B8%B8%E4%BC%9A%E9%85%8D%E5%90%88%E5%BB%B6%E8%BF%9F/" title="延迟双删如此好用，为何大厂从来不用Cache-aside下数据变更推荐使用删除缓存的策略，为降低数据不一致通常会配合延迟">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">延</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">延迟双删如此好用，为何大厂从来不用Cache-aside下数据变更推荐使用删除缓存的策略，为降低数据不一致通常会配合延迟</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div></div>
+  
+</widget>
+
+
+</div></div>
+  </div>
+  <footer class="site-region__footer">
+    <div class="site-region__footer-actions"><div class="widget-instance widget-instance--actions" data-widget-id="leftbar:fixed:actions" data-presentation="leftbar">
+<div class="region-actions social-wrap ui-collection" data-layout="inline" data-variant="nav" data-density="compact"><a class="social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" href="https://github.com/dandeliono" target="_blank" rel="external nofollow noopener noreferrer"><span class="ui-icon"><svg class="icon" viewBox="0 0 1 1" data-icon="default:github" aria-hidden="true"></svg></span></a></div>
+</div></div>
+    <div class="site-region__system ui-collection" data-layout="inline" data-variant="nav" data-density="compact">
+      <div class="site-region__settings"><div class="widget-instance widget-instance--settings" data-widget-id="leftbar:fixed:settings" data-presentation="leftbar" data-leftbar-rail="">
+<a class="settings-widget ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/settings/" data-profile-provider="" data-profile-identity-enabled="false" data-profile-fallback-avatar="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg" data-settings-placement="leftbar" data-settings-label="设置" aria-label="设置" title="设置">
+  <span class="settings-widget__avatar" aria-hidden="true">
+    <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><path fill-rule="evenodd" d="M12.4277 2C11.3139 2 10.2995 2.6007 8.27081 3.80211L7.58466 4.20846C5.55594 5.40987 4.54158 6.01057 3.98466 7C3.42773 7.98943 3.42773 9.19084 3.42773 11.5937V12.4063C3.42773 14.8092 3.42773 16.0106 3.98466 17C4.54158 17.9894 5.55594 18.5901 7.58466 19.7915L8.27081 20.1979C10.2995 21.3993 11.3139 22 12.4277 22C13.5416 22 14.5559 21.3993 16.5847 20.1979L17.2708 19.7915C19.2995 18.5901 20.3139 17.9894 20.8708 17C21.4277 16.0106 21.4277 14.8092 21.4277 12.4063V11.5937C21.4277 9.19084 21.4277 7.98943 20.8708 7C20.3139 6.01057 19.2995 5.40987 17.2708 4.20846L16.5847 3.80211C14.5559 2.6007 13.5416 2 12.4277 2Z" clip-rule="evenodd" opacity=".5"></path><path d="M12.4277 8.25C10.3567 8.25 8.67773 9.92893 8.67773 12C8.67773 14.0711 10.3567 15.75 12.4277 15.75C14.4988 15.75 16.1777 14.0711 16.1777 12C16.1777 9.92893 14.4988 8.25 12.4277 8.25Z"></path></g></svg></span>
+  </span>
+  <span class="settings-widget__name ui-collection__title">设置</span>
+</a>
+</div></div>
+      <button type="button" class="leftbar-state-toggle ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" aria-label="Collapse leftbar" aria-expanded="true" data-shell-action="toggle-leftbar"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M3.172 4.172C2 5.343 2 7.229 2 11v2c0 3.771 0 5.657 1.172 6.828S6.229 21 10 21h5V3h-5C6.229 3 4.343 3 3.172 4.172" clip-rule="evenodd" opacity=".5"></path><path fill="currentColor" d="M5.5 9.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zm1 4a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5zM22 13v-2c0-3.771 0-5.657-1.172-6.828c-.974-.975-3.192-1.139-5.828-1.166v17.988c2.636-.027 4.854-.191 5.828-1.166C22 18.657 22 16.771 22 13"></path></svg></span></button>
+    </div>
+  </footer></div></div></aside>
+<main data-stellar-runtime-region="" class="site-main" id="main">
+
+
+<div class="article-banner-wrap slide-up"><div class="article banner top">
+  <div class="content">
+    
+    <div class="top bread-nav footnote"><div class="top-row"><div class="left" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/Java/">Java</a>
+</div><div class="right"><span class="cap reading">5276 字 · 预计阅读 18 分钟</span></div></div><div class="meta-row">
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2021-08-15T15:36:56.000Z">2021-08-15</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2021-08-15T15:36:56.000Z">2021-08-15</time></span></div>
+</div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>Java内存访问重排序的研究</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div></div>
+<article class="md-text content slide-up"><h2 id="什么是重排序"><a href="#什么是重排序" class="headerlink" title="什么是重排序"></a>什么是重排序</h2><p>请先看这样一段代码：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">public class PossibleReordering {</span><br><span class="line">static int x = 0, y = 0;</span><br><span class="line">static int a = 0, b = 0;</span><br><span class="line"></span><br><span class="line">public static void main(String[] args) throws InterruptedException {</span><br><span class="line">    Thread one = new Thread(new Runnable() {</span><br><span class="line">        public void run() {</span><br><span class="line">            a = 1;</span><br><span class="line">            x = b;</span><br><span class="line">        }</span><br><span class="line">    });</span><br><span class="line">    </span><br><span class="line">    Thread other = new Thread(new Runnable() {</span><br><span class="line">        public void run() {</span><br><span class="line">            b = 1;</span><br><span class="line">            y = a;</span><br><span class="line">        }</span><br><span class="line">    });</span><br><span class="line">    one.start();other.start();</span><br><span class="line">    one.join();other.join();</span><br><span class="line">    System.out.println(“(” + x + “,” + y + “)”);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>很容易想到这段代码的运行结果可能为 (1,0)、(0,1) 或(1,1)，因为线程 one 可以在线程 two 开始之前就执行完了，也有可能反之，甚至有可能二者的指令是同时或交替执行的。</p>
+<p>然而，这段代码的执行结果也可能是 (0,0). 因为，在实际运行时，代码指令可能并不是严格按照代码语句顺序执行的。得到(0,0) 结果的语句执行过程，如下图所示。值得注意的是，a=1 和 x=b 这两个语句的赋值操作的顺序被颠倒了，或者说，发生了指令“重排序”(reordering)。（事实上，输出了这一结果，并不代表一定发生了指令重排序，内存可见性问题也会导致这样的输出，详见后文）</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/dandeliono/img/main/resource/3173315025ef0c1f9e46db0b72313fd9.png" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="1612" height="378" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[0,0,95.2431,1]}" data-stellar-image-source="https://raw.githubusercontent.com/dandeliono/img/main/resource/3173315025ef0c1f9e46db0b72313fd9.png"></p>
+<p>重排序图解</p>
+<p>对重排序现象不太了解的开发者可能会对这种现象感到吃惊，但是，笔者开发环境下做的一个小实验证实了这一结果 2。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/dandeliono/img/main/resource/34adfcab22756c73b080917ee4d77f09.png" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="261" height="439" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[3.2597,0.3188,27.4645,1]}" data-stellar-image-source="https://raw.githubusercontent.com/dandeliono/img/main/resource/34adfcab22756c73b080917ee4d77f09.png"></p>
+<p>重排序实验</p>
+<p>实验代码是构造一个循环，反复执行上面的实例代码，直到出现 a=0 且 b=0 的输出为止。实验结果说明，循环执行到第 13830 次时输出了 (0,0).</p>
+<p>大多数现代微处理器都会采用将指令乱序执行（out-of-order execution，简称 OoOE 或 OOE）的方法，在条件允许的情况下，直接运行当前有能力立即执行的后续指令，避开获取下一条指令所需数据时造成的等待 3。通过乱序执行的技术，处理器可以大大提高执行效率。</p>
+<p>除了处理器，常见的 Java 运行时环境的 JIT 编译器也会做指令重排序操作 4，即生成的机器指令与字节码指令顺序不一致。</p>
+<h2 id="as-if-serial-语义"><a href="#as-if-serial-语义" class="headerlink" title="as-if-serial 语义"></a>as-if-serial 语义</h2><p>As-if-serial 语义的意思是，所有的动作 (Action)5 都可以为了优化而被重排序，但是必须保证它们重排序后的结果和程序代码本身的应有结果是一致的。Java 编译器、运行时和处理器都会保证单线程下的 as-if-serial 语义。 比如，为了保证这一语义，重排序不会发生在有数据依赖的操作之中。</p>
+<ul>
+<li>int a = 1;</li>
+<li>int b = 2;</li>
+<li>int c = a + b;</li>
+</ul>
+<p>将上面的代码编译成 Java 字节码或生成机器指令，可视为展开成了以下几步动作（实际可能会省略或添加某些步骤）。</p>
+<ol>
+<li>对 a 赋值 1</li>
+<li>对 b 赋值 2</li>
+<li>取 a 的值</li>
+<li>取 b 的值</li>
+<li>将取到两个值相加后存入 c</li>
+</ol>
+<p>在上面 5 个动作中，动作 1 可能会和动作 2、4 重排序，动作 2 可能会和动作 1、3 重排序，动作 3 可能会和动作 2、4 重排序，动作 4 可能会和 1、3 重排序。但动作 1 和动作 3、5 不能重排序。动作 2 和动作 4、5 不能重排序。因为它们之间存在数据依赖关系，一旦重排，as-if-serial 语义便无法保证。</p>
+<p>为保证 as-if-serial 语义，Java 异常处理机制也会为重排序做一些特殊处理。例如在下面的代码中，y = 0 / 0 可能会被重排序在 x = 2 之前执行，为了保证最终不致于输出 x = 1 的错误结果，JIT 在重排序时会在 catch 语句中插入错误代偿代码，将 x 赋值为 2，将程序恢复到发生异常时应有的状态。这种做法的确将异常捕捉的逻辑变得复杂了，但是 JIT 的优化的原则是，尽力优化正常运行下的代码逻辑，哪怕以 catch 块逻辑变得复杂为代价，毕竟，进入 catch 块内是一种 “异常” 情况的表现。6</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public class Reordering {</span><br><span class="line">    public static void main(String[] args) {</span><br><span class="line">        int x, y;</span><br><span class="line">        x = 1;</span><br><span class="line">        try {</span><br><span class="line">            x = 2;</span><br><span class="line">            y = 0 / 0;    </span><br><span class="line">        } catch (Exception e) {</span><br><span class="line">        } finally {</span><br><span class="line">            System.out.println("x = " + x);</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="内存访问重排序与内存可见性"><a href="#内存访问重排序与内存可见性" class="headerlink" title="内存访问重排序与内存可见性"></a>内存访问重排序与内存可见性</h2><p>计算机系统中，为了尽可能地避免处理器访问主内存的时间开销，处理器大多会利用缓存 (cache) 以提高性能。其模型如下图所示：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/dandeliono/img/main/resource/b0956af09069777b93e4ab097f727236.png" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="1148" height="338" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[60,0.0022,85.5544,1]}" data-stellar-image-source="https://raw.githubusercontent.com/dandeliono/img/main/resource/b0956af09069777b93e4ab097f727236.png"></p>
+<p>处理器 Cache 模型</p>
+<p>在这种模型下会存在一个现象，即缓存中的数据与主内存的数据并不是实时同步的，各 CPU（或 CPU 核心）间缓存的数据也不是实时同步的。这导致在同一个时间点，各 CPU 所看到同一内存地址的数据的值可能是不一致的。从程序的视角来看，就是在同一个时间点，各个线程所看到的共享变量的值可能是不一致的。</p>
+<p>有的观点会将这种现象也视为重排序的一种，命名为 “内存系统重排序”。因为这种内存可见性问题造成的结果就好像是内存访问指令发生了重排序一样。</p>
+<p>这种内存可见性问题也会导致章节一中示例代码即便在没有发生指令重排序的情况下的执行结果也还是 (0, 0)。</p>
+<h2 id="内存访问重排序与-Java-内存模型"><a href="#内存访问重排序与-Java-内存模型" class="headerlink" title="内存访问重排序与 Java 内存模型"></a>内存访问重排序与 Java 内存模型</h2><p>Java 的目标是成为一门平台无关性的语言，即 Write once, run anywhere. 但是不同硬件环境下指令重排序的规则不尽相同。例如，x86 下运行正常的 Java 程序在 IA64 下就可能得到非预期的运行结果。为此，JSR-1337 制定了 Java 内存模型 (Java Memory Model, JMM)，旨在提供一个统一的可参考的规范，屏蔽平台差异性。从 Java 5 开始，Java 内存模型成为 Java 语言规范的一部分。</p>
+<p>根据 Java 内存模型中的规定，可以总结出以下几条 happens-before 规则 8。Happens-before 的前后两个操作不会被重排序且后者对前者的内存可见。</p>
+<ul>
+<li>程序次序法则：线程中的每个动作 A 都 happens-before 于该线程中的每一个动作 B，其中，在程序中，所有的动作 B 都能出现在 A 之后。</li>
+<li>监视器锁法则：对一个监视器锁的解锁 happens-before 于每一个后续对同一监视器锁的加锁。</li>
+<li>volatile 变量法则：对 volatile 域的写入操作 happens-before 于每一个后续对同一个域的读写操作。</li>
+<li>线程启动法则：在一个线程里，对 Thread.start 的调用会 happens-before 于每个启动线程的动作。</li>
+<li>线程终结法则：线程中的任何动作都 happens-before 于其他线程检测到这个线程已经终结、或者从 Thread.join 调用中成功返回，或 Thread.isAlive 返回 false。</li>
+<li>中断法则：一个线程调用另一个线程的 interrupt happens-before 于被中断的线程发现中断。</li>
+<li>终结法则：一个对象的构造函数的结束 happens-before 于这个对象 finalizer 的开始。</li>
+<li>传递性：如果 A happens-before 于 B，且 B happens-before 于 C，则 A happens-before 于 C</li>
+</ul>
+<p>Happens-before 关系只是对 Java 内存模型的一种近似性的描述，它并不够严谨，但便于日常程序开发参考使用，关于更严谨的 Java 内存模型的定义和描述，请阅读 JSR-133 原文或 Java 语言规范章节 17.4。</p>
+<p>除此之外，Java 内存模型对 volatile 和 final 的语义做了扩展。对 volatile 语义的扩展保证了 volatile 变量在一些情况下不会重排序，volatile 的 64 位变量 double 和 long 的读取和赋值操作都是原子的。对 final 语义的扩展保证一个对象的构建方法结束前，所有 final 成员变量都必须完成初始化（的前提是没有 this 引用溢出）。</p>
+<p>Java 内存模型关于重排序的规定，总结后如下表所示：</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/dandeliono/img/main/resource/30a4a34624c211a3dd5cbbb968432be9.png" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="1842" height="494" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[0,0,94.1119,1]}" data-stellar-image-source="https://raw.githubusercontent.com/dandeliono/img/main/resource/30a4a34624c211a3dd5cbbb968432be9.png"></p>
+<p>重排序示意表</p>
+<p>表中 “第二项操作” 的含义是指，第一项操作之后的所有指定操作。如，普通读不能与其之后的所有 volatile 写重排序。另外，JMM 也规定了上述 volatile 和同步块的规则尽适用于存在多线程访问的情景。例如，若编译器（这里的编译器也包括 JIT，下同）证明了一个 volatile 变量只能被单线程访问，那么就可能会把它做为普通变量来处理。</p>
+<p>留白的单元格代表允许在不违反 Java 基本语义的情况下重排序。例如，编译器不会对对同一内存地址的读和写操作重排序，但是允许对不同地址的读和写操作重排序。</p>
+<p>除此之外，为了保证 final 的新增语义。JSR-133 对于 final 变量的重排序也做了限制。</p>
+<ul>
+<li>构建方法内部的 final 成员变量的存储，并且，假如 final 成员变量本身是一个引用的话，这个 final 成员变量可以引用到的一切存储操作，都不能与构建方法外的将当期构建对象赋值于多线程共享变量的存储操作重排序。例如对于如下语句：</li>
+</ul>
+<blockquote>
+<p>x.finalField = v; … ; 构建方法边界 sharedRef = x; v.afield = 1; x.finalField = v; … ; 构建方法边界 sharedRef = x;</p>
+</blockquote>
+<p>这两条语句中，构建方法边界前后的指令都不能重排序。</p>
+<ul>
+<li>初始读取共享对象与初始读取该共享对象的 final 成员变量之间不能重排序。例如对于如下语句：</li>
+</ul>
+<blockquote>
+<p>x = sharedRef; … ; i = x.finalField;</p>
+</blockquote>
+<p>前后两句语句之间不会发生重排序。由于这两句语句有数据依赖关系，编译器本身就不会对它们重排序，但确实有一些处理器会对这种情况重排序，因此特别制定了这一规则。</p>
+<h2 id="内存屏障"><a href="#内存屏障" class="headerlink" title="内存屏障"></a>内存屏障</h2><p>内存屏障（Memory Barrier，或有时叫做内存栅栏，Memory Fence）是一种 CPU 指令，用于控制特定条件下的重排序和内存可见性问题。Java 编译器也会根据内存屏障的规则禁止重排序。</p>
+<p>内存屏障可以被分为以下几种类型：</p>
+<ul>
+<li>LoadLoad 屏障：对于这样的语句 Load1; LoadLoad; Load2，在 Load2 及后续读取操作要读取的数据被访问前，保证 Load1 要读取的数据被读取完毕。</li>
+<li>StoreStore 屏障：对于这样的语句 Store1; StoreStore; Store2，在 Store2 及后续写入操作执行前，保证 Store1 的写入操作对其它处理器可见。</li>
+<li>LoadStore 屏障：对于这样的语句 Load1; LoadStore; Store2，在 Store2 及后续写入操作被刷出前，保证 Load1 要读取的数据被读取完毕。</li>
+<li>StoreLoad 屏障：对于这样的语句 Store1; StoreLoad; Load2，在 Load2 及后续所有读取操作执行前，保证 Store1 的写入对所有处理器可见。它的开销是四种屏障中最大的。在大多数处理器的实现中，这个屏障是个万能屏障，兼具其它三种内存屏障的功能。</li>
+</ul>
+<p>有的处理器的重排序规则较严，无需内存屏障也能很好的工作，Java 编译器会在这种情况下不放置内存屏障。 为了实现上一章中讨论的 JSR-133 的规定，Java 编译器会这样使用内存屏障。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://raw.githubusercontent.com/dandeliono/img/main/resource/33c1d8babfa21b7025b724cf74bc1db9.png" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="1846" height="516" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[0,0,94.2824,1]}" data-stellar-image-source="https://raw.githubusercontent.com/dandeliono/img/main/resource/33c1d8babfa21b7025b724cf74bc1db9.png"></p>
+<p>内存屏障示意表</p>
+<p>为了保证 final 字段的特殊语义，也会在下面的语句加入内存屏障。</p>
+<blockquote>
+<p>x.finalField = v; StoreStore; sharedRef = x;</p>
+</blockquote>
+<h2 id="Intel-64-IA-32-架构下的内存访问重排序"><a href="#Intel-64-IA-32-架构下的内存访问重排序" class="headerlink" title="Intel 64/IA-32 架构下的内存访问重排序"></a>Intel 64/IA-32 架构下的内存访问重排序</h2><p>Intel 64 和 IA-32 是我们较常用的硬件环境，相对于其它处理器而言，它们拥有一种较严格的重排序规则。Pentium 4 以后的 Intel 64 或 IA-32 处理的重排序规则如下。9</p>
+<p>在单 CPU 系统中：</p>
+<ul>
+<li>读操作不与其它读操作重排序。</li>
+<li>写操作不与其之前的写操作重排序。</li>
+<li>写内存操作不与其它写操作重排序，但有以下几种例外</li>
+<li>CLFLUSH 的写操作</li>
+<li>带有 non-temporal move 指令 (MOVNTI, MOVNTQ, MOVNTDQ, MOVNTPS, and MOVNTPD) 的 streaming 写入。</li>
+<li>字符串操作</li>
+<li>读操作可能会与其之前的写不同位置的写操作重排序，但不与其之前的写相同位置的写操作重排序。</li>
+<li>读和写操作不与 I/O 指令，带锁的指令或序列化指令重排序。</li>
+<li>读操作不能重排序到 LFENCE 和 MFENCE 之前。</li>
+<li>写操作不能重排序到 LFENCE、SFENCE 和 MFENCE 之前。</li>
+<li>LFENCE 不能重排序到读操作之前。</li>
+<li>SFENCE 不能重排序到写之前。</li>
+<li>MFENCE 不能重排序到读或写操作之前。</li>
+</ul>
+<p>在多处理器系统中：</p>
+<ul>
+<li>各自处理器内部遵循单处理器的重排序规则。</li>
+<li>单处理器的写操作对所有处理器可见是同时的。</li>
+<li>各自处理器的写操作不会重排序。</li>
+<li>内存重排序遵守因果性 (causality)（内存重排序遵守传递可见性）。</li>
+<li>任何写操作对于执行这些写操作的处理器之外的处理器来看都是一致的。</li>
+<li>带锁指令是顺序执行的。</li>
+</ul>
+<p>值得注意的是，对于 Java 编译器而言，Intel 64/IA-32 架构下处理器不需要 LoadLoad、LoadStore、StoreStore 屏障，因为不会发生需要这三种屏障的重排序。</p>
+<h2 id="一例-Intel-64-IA-32-架构下的代码性能优化"><a href="#一例-Intel-64-IA-32-架构下的代码性能优化" class="headerlink" title="一例 Intel 64/IA-32 架构下的代码性能优化"></a>一例 Intel 64/IA-32 架构下的代码性能优化</h2><p>现在有这样一个场景，一个容器可以放一个东西，容器支持 create 方法来创建一个新的东西并放到容器里，支持 get 方法取到这个容器里的东西。我们可以较容易地写出下面的代码：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">public class Container {</span><br><span class="line">    public static class SomeThing {</span><br><span class="line">        private int status;</span><br><span class="line"></span><br><span class="line">        public SomeThing() {</span><br><span class="line">            status = 1;</span><br><span class="line">        }</span><br><span class="line"></span><br><span class="line">        public int getStatus() {</span><br><span class="line">            return status;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    private SomeThing object;</span><br><span class="line"></span><br><span class="line">    public void create() {</span><br><span class="line">        object = new SomeThing();</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    public SomeThing get() {</span><br><span class="line">        while (object == null) {</span><br><span class="line">            Thread.yield(); </span><br><span class="line">        }</span><br><span class="line">        return object;</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>在单线程场景下，这段代码执行起来是没有问题的。但是在多线程并发场景下，由不同的线程 create 和 get 东西，这段代码是有问题的。问题的原因与普通的双重检查锁定单例模式 (Double Checked Locking,DCL)10 类似，即 SomeThing 的构建与将指向构建中的 SomeThing 引用赋值到 object 变量这两者可能会发生重排序。导致 get 中返回一个正被构建中的不完整的 SomeThing 对象实例。为了解决这一问题，通常的办法是使用 volatile 修饰 object 字段。这种方法避免了重排序，保证了内存可见性，摒弃比使用同步块导致的性能损失更小。但是，假如使用场景对 object 的内存可见性并不敏感的话（不要求一个线程写入了 object，object 的新值立即对下一个读取的线程可见），在 Intel 64/IA-32 环境下，有更好的解决方案。</p>
+<p>根据上一章的内容，我们知道 Intel 64/IA-32 下写操作之间不会发生重排序，即在处理器中，构建 SomeThing 对象与赋值到 object 这两个操作之间的顺序性是可以保证的。这样看起来，仅仅使用 volatile 来避免重排序是多此一举的。但是，Java 编译器却可能生成重排序后的指令。但令人高兴的是，Oracle 的 JDK 中提供了 Unsafe. putOrderedObject，Unsafe. putOrderedInt，Unsafe. putOrderedLong 这三个方法，JDK 会在执行这三个方法时插入 StoreStore 内存屏障，避免发生写操作重排序。而在 Intel 64/IA-32 架构下，StoreStore 屏障并不需要，Java 编译器会将 StoreStore 屏障去除。比起写入 volatile 变量之后执行 StoreLoad 屏障的巨大开销，采用这种方法除了避免重排序而带来的性能损失以外，不会带来其它的性能开销。</p>
+<p>我们将做一个小实验来比较二者的性能差异。一种是使用 volatile 修饰 object 成员变量。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">public class Container {</span><br><span class="line">    public static class SomeThing {</span><br><span class="line">        private int status;</span><br><span class="line"></span><br><span class="line">        public SomeThing() {</span><br><span class="line">            status = 1;</span><br><span class="line">        }</span><br><span class="line"></span><br><span class="line">        public int getStatus() {</span><br><span class="line">            return status;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    private volatile  SomeThing object;</span><br><span class="line"></span><br><span class="line">    public void create() {</span><br><span class="line">        object = new SomeThing();</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    public SomeThing get() {</span><br><span class="line">        while (object == null) {</span><br><span class="line">            Thread.yield(); </span><br><span class="line">        }</span><br><span class="line">        return object;</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>一种是利用 Unsafe. putOrderedObject 在避免在适当的位置发生重排序。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">public class Container {</span><br><span class="line">    public static class SomeThing {</span><br><span class="line">        private int status;</span><br><span class="line"></span><br><span class="line">        public SomeThing() {</span><br><span class="line">            status = 1;</span><br><span class="line">        }</span><br><span class="line"></span><br><span class="line">        public int getStatus() {</span><br><span class="line">            return status;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    private SomeThing object;</span><br><span class="line"></span><br><span class="line">    private Object value;</span><br><span class="line">    private static final Unsafe unsafe = getUnsafe();</span><br><span class="line">    private static final long valueOffset;</span><br><span class="line">    static {</span><br><span class="line">        try {</span><br><span class="line">            valueOffset = unsafe.objectFieldOffset(Container.class.getDeclaredField("value"));</span><br><span class="line">        } catch (Exception ex) { throw new Error(ex); }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    public void create() {</span><br><span class="line">        SomeThing temp = new SomeThing();</span><br><span class="line">        unsafe.putOrderedObject(this, valueOffset, null);	</span><br><span class="line">        object = temp;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    public SomeThing get() {</span><br><span class="line">        while (object == null) {</span><br><span class="line">            Thread.yield();</span><br><span class="line">        }</span><br><span class="line">        return object;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public static Unsafe getUnsafe() {</span><br><span class="line">        try {</span><br><span class="line">            Field f = Unsafe.class.getDeclaredField("theUnsafe");</span><br><span class="line">            f.setAccessible(true);</span><br><span class="line">            return (Unsafe)f.get(null);</span><br><span class="line">        } catch (Exception e) {</span><br><span class="line">        }</span><br><span class="line">        return null;</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>由于直接调用 Unsafe.getUnsafe() 需要配置 JRE 获取较高权限，我们利用反射获取 Unsafe 中的 theUnsafe 来取得 Unsafe 的可用实例。<br>unsafe.putOrderedObject(this, valueOffset, null) 这句仅仅是为了借用这句话功能的防止写重排序，除此之外无其它作用。</p>
+<p>利用下面的代码分别测试两种方案的实际运行时间。在运行时开启 - server 和 -XX:CompileThreshold=1 以模拟生产环境下长时间运行后的 JIT 优化效果。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">public static void main(String[] args) throws InterruptedException {</span><br><span class="line">    final int THREADS_COUNT = 20;</span><br><span class="line">    final int LOOP_COUNT = 100000;</span><br><span class="line"></span><br><span class="line">    long sum = 0;</span><br><span class="line">    long min = Integer.MAX_VALUE;</span><br><span class="line">    long max = 0;</span><br><span class="line">    for(int n = 0;n &lt;= 100;n++) {</span><br><span class="line">        final Container basket = new Container();</span><br><span class="line">        List&lt;Thread&gt; putThreads = new ArrayList&lt;Thread&gt;();</span><br><span class="line">        List&lt;Thread&gt; takeThreads = new ArrayList&lt;Thread&gt;();</span><br><span class="line">        for (int i = 0; i &lt; THREADS_COUNT; i++) {</span><br><span class="line">            putThreads.add(new Thread() {</span><br><span class="line">                @Override</span><br><span class="line">                public void run() {</span><br><span class="line">                    for (int j = 0; j &lt; LOOP_COUNT; j++) {</span><br><span class="line">                        basket.create();</span><br><span class="line">                    }</span><br><span class="line">                }</span><br><span class="line">            });</span><br><span class="line">            takeThreads.add(new Thread() {</span><br><span class="line">                @Override</span><br><span class="line">                public void run() {</span><br><span class="line">                    for (int j = 0; j &lt; LOOP_COUNT; j++) {</span><br><span class="line">                        basket.get().getStatus();</span><br><span class="line">                    }</span><br><span class="line">                }</span><br><span class="line">            });</span><br><span class="line">        }</span><br><span class="line">        long start = System.nanoTime();</span><br><span class="line">        for (int i = 0; i &lt; THREADS_COUNT; i++) {</span><br><span class="line">            takeThreads.get(i).start();</span><br><span class="line">            putThreads.get(i).start();</span><br><span class="line">        }</span><br><span class="line">        for (int i = 0; i &lt; THREADS_COUNT; i++) {</span><br><span class="line">            takeThreads.get(i).join();</span><br><span class="line">            putThreads.get(i).join();</span><br><span class="line">        }</span><br><span class="line">        long end = System.nanoTime();</span><br><span class="line">        long period = end - start;</span><br><span class="line">        if(n == 0) {</span><br><span class="line">            continue;	</span><br><span class="line">        }</span><br><span class="line">        sum += (period);</span><br><span class="line">        System.out.println(period);</span><br><span class="line">        if(period &lt; min) {</span><br><span class="line">            min = period;</span><br><span class="line">        }</span><br><span class="line">        if(period &gt; max) {</span><br><span class="line">            max = period;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    System.out.println("Average : " + sum / 100);</span><br><span class="line">    System.out.println("Max : " + max);</span><br><span class="line">    System.out.println("Min : " + min);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<p>在笔者的计算机上运行测试，采用 volatile 方案的运行结果如下：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Average : 62535770</span><br><span class="line">Max : 82515000</span><br><span class="line">Min : 45161000</span><br></pre></td></tr></tbody></table></figure>
+
+<p>采用 unsafe.putOrderedObject 方案的运行结果如下：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Average : 50746230</span><br><span class="line">Max : 68999000</span><br><span class="line">Min : 38038000</span><br></pre></td></tr></tbody></table></figure>
+
+<p>从结果看出，unsafe.putOrderedObject 方案比 volatile 方案平均耗时减少 18.9%，最大耗时减少 16.4%，最小耗时减少 15.8%. 另外，即使在其它会发生写写重排序的处理器中，由于 StoreStore 屏障的性能损耗小于 StoreLoad 屏障，采用这一方法也是一种可行的方案。但值得再次注意的是，这一方案不是对 volatile 语义的等价替换，而是在特定场景下做的特殊优化，它仅避免了写写重排序，但不保证内存可见性。</p>
+<h2 id="序"><a href="#序" class="headerlink" title="序"></a>序</h2><ol>
+<li>样例选自《Java 并发编程实践》章节 16.1</li>
+<li>实验代码见附 1</li>
+<li><a target="_blank" rel="noopener" href="http://en.wikipedia.org/wiki/Out-of-order_execution" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>http://en.wikipedia.org/wiki/Out-of-order_execution</a></li>
+<li>Oracle Java Hotspot <a target="_blank" rel="noopener" href="https://wikis.oracle.com/display/HotSpotInternals/PerformanceTacticIndex" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>https://wikis.oracle.com/display/HotSpotInternals/PerformanceTacticIndex</a> IBM JVM <a target="_blank" rel="noopener" href="http://publib.boulder.ibm.com/infocenter/javasdk/v1r4m2/index.jsp?topic=/com.ibm.java.doc.diagnostics.142j9/html/howjitopt.html" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>http://publib.boulder.ibm.com/infocenter/javasdk/v1r4m2/index.jsp?topic=%2Fcom.ibm.java.doc.diagnostics.142j9%2Fhtml%2Fhowjitopt.html</a></li>
+<li>Java 语言规范中对 “动作” 这个词有一个明确而具体的定义，详见<a target="_blank" rel="noopener" href="http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.4.2%E3%80%82" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>http://docs.oracle.com/javase/specs/jls/se7/html/jls-17.html#jls-17.4.2。</a></li>
+<li><a target="_blank" rel="noopener" href="https://community.oracle.com/thread/1544959" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>https://community.oracle.com/thread/1544959</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.cs.umd.edu/~pugh/java/memoryModel/jsr133.pdf" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>http://www.cs.umd.edu/~pugh/java/memoryModel/jsr133.pdf</a></li>
+<li>参见《Java 并发编程实践》章节 16.1</li>
+<li>Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume 3 (3A, 3B &amp; 3C): System Programming Guide 章节 8.2</li>
+<li><a target="_blank" rel="noopener" href="http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html</a></li>
+</ol>
+<h3 id="附-1-复现重排序现象实验代码"><a href="#附-1-复现重排序现象实验代码" class="headerlink" title="附 1 复现重排序现象实验代码"></a>附 1 复现重排序现象实验代码</h3><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">public class Test {</span><br><span class="line">    private static int x = 0, y = 0;</span><br><span class="line">    private static int a = 0, b =0;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws InterruptedException {</span><br><span class="line">        int i = 0;</span><br><span class="line">        for(;;) {</span><br><span class="line">            i++;</span><br><span class="line">            x = 0; y = 0;</span><br><span class="line">            a = 0; b = 0;</span><br><span class="line">            Thread one = new Thread(new Runnable() {</span><br><span class="line">                public void run() {</span><br><span class="line">                    </span><br><span class="line">                    shortWait(100000);</span><br><span class="line">                    a = 1;</span><br><span class="line">                    x = b;</span><br><span class="line">                }</span><br><span class="line">            });</span><br><span class="line"></span><br><span class="line">            Thread other = new Thread(new Runnable() {</span><br><span class="line">                public void run() {</span><br><span class="line">                    b = 1;</span><br><span class="line">                    y = a;</span><br><span class="line">                }</span><br><span class="line">            });</span><br><span class="line">            one.start();other.start();</span><br><span class="line">            one.join();other.join();</span><br><span class="line">            String result = "第" + i + "次 (" + x + "," + y + "）";</span><br><span class="line">            if(x == 0 &amp;&amp; y == 0) {</span><br><span class="line">                System.err.println(result);</span><br><span class="line">                break;</span><br><span class="line">            } else {</span><br><span class="line">                System.out.println(result);</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public static void shortWait(long interval){</span><br><span class="line">        long start = System.nanoTime();</span><br><span class="line">        long end;</span><br><span class="line">        do{</span><br><span class="line">            end = System.nanoTime();</span><br><span class="line">        }while(start + interval &gt;= end);</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+</article>
+
+
+
+  <div class="article-share slide-up" id="share">
+    <div class="body">
+      <div class="social-wrap dis-select"><a class="social share-item qrcode ui-interactive is-icon-only" onclick="util.toggle(&quot;share-qrcode&quot;)" aria-label="分享文章: QR Code" title="分享文章: QR Code"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M10.553 13.447c-.424-.424-.95-.596-1.535-.675c-.553-.074-1.25-.074-2.086-.074H5.827c-.58 0-1.065 0-1.459.037c-.411.04-.795.124-1.146.34c-.345.21-.634.5-.845.844c-.216.352-.3.735-.34 1.147C2 15.459 2 15.944 2 16.525v.068c0 .884 0 1.597.055 2.17c.056.592.175 1.108.459 1.571c.288.47.682.864 1.152 1.152c.463.284.979.403 1.57.46C5.81 22 6.524 22 7.407 22h.07c.58 0 1.064 0 1.458-.037c.412-.04.795-.124 1.147-.34c.344-.21.633-.5.844-.844c.216-.352.3-.736.34-1.147c.037-.394.037-.879.037-1.46v-1.104c0-.836 0-1.533-.074-2.086c-.079-.584-.251-1.111-.675-1.535m-1.62-11.41c.412.04.795.124 1.147.34c.344.21.633.5.844.845c.216.351.3.735.34 1.146c.037.394.037.879.037 1.46v1.104c0 .836 0 1.533-.074 2.086c-.079.584-.251 1.111-.675 1.535s-.95.596-1.535.675c-.553.074-1.25.074-2.086.074H5.827c-.58 0-1.065 0-1.459-.037c-.411-.04-.795-.124-1.146-.34a2.56 2.56 0 0 1-.845-.844c-.216-.352-.3-.735-.34-1.147C2 8.54 2 8.056 2 7.475v-.068c0-.884 0-1.597.055-2.17c.056-.592.175-1.108.459-1.571c.288-.47.682-.864 1.152-1.152c.463-.284.979-.403 1.57-.46C5.81 2 6.524 2 7.407 2h.07c.58 0 1.064 0 1.458.037M16.593 2h-.068c-.58 0-1.065 0-1.46.037c-.41.04-.794.124-1.146.34c-.344.21-.633.5-.844.845c-.216.351-.3.735-.34 1.146c-.037.394-.037.879-.037 1.46v1.104c0 .836 0 1.533.074 2.086c.079.584.251 1.111.675 1.535s.95.596 1.535.675c.553.074 1.25.074 2.086.074h1.105c.58 0 1.065 0 1.459-.037c.411-.04.795-.124 1.146-.34c.345-.21.634-.5.845-.844c.216-.352.3-.735.34-1.147C22 8.54 22 8.056 22 7.475v-.068c0-.884 0-1.597-.055-2.17c-.056-.592-.175-1.108-.459-1.571a3.5 3.5 0 0 0-1.152-1.152c-.463-.284-.979-.403-1.57-.46C18.19 2 17.477 2 16.594 2" opacity=".5"></path><path fill="currentColor" d="M14.093 21.302a.698.698 0 1 1-1.396 0v-2.79h1.396z" opacity=".4"></path><path fill="currentColor" d="M21.302 12.698a.7.7 0 0 0-.697.697v3.256H22v-3.256a.7.7 0 0 0-.698-.697" opacity=".5"></path><path fill="currentColor" d="M16.076 16.617c-.076.184-.076.417-.076.883s0 .699.076.883a1 1 0 0 0 .541.54c.184.077.417.077.883.077s.699 0 .883-.076a1 1 0 0 0 .54-.541c.077-.184.077-.417.077-.883s0-.699-.076-.883a1 1 0 0 0-.541-.54C18.199 16 17.966 16 17.5 16s-.699 0-.883.076a1 1 0 0 0-.54.541"></path><path fill="currentColor" d="M22 18.535v-.023h-1.396c0 .443 0 .74-.016.97c-.015.224-.043.333-.073.405a1.16 1.16 0 0 1-.629.63c-.072.029-.18.056-.405.072c-.23.015-.527.016-.97.016h-1.86V22h1.883c.414 0 .759 0 1.042-.02a2.6 2.6 0 0 0 .844-.175a2.56 2.56 0 0 0 1.384-1.384c.112-.27.156-.549.176-.844c.02-.283.02-.628.02-1.042" opacity=".7"></path><path fill="currentColor" d="M12.697 16.616v.035h1.396c0-.668 0-1.116.035-1.458c.034-.33.093-.482.16-.583a1.2 1.2 0 0 1 .321-.32c.101-.068.254-.128.584-.161c.342-.035.79-.036 1.458-.036h1.86v-1.395h-1.896c-.623 0-1.142 0-1.563.043c-.44.044-.85.142-1.218.388c-.28.187-.519.426-.706.706c-.246.368-.343.777-.388 1.217c-.043.421-.043.94-.043 1.564" opacity=".6"></path><path fill="currentColor" d="M5.508 18.69c.219.155.528.155 1.146.155c.619 0 .928 0 1.146-.155a.8.8 0 0 0 .2-.199c.154-.218.154-.527.154-1.146s0-.927-.155-1.146A.8.8 0 0 0 7.8 16c-.218-.155-.527-.155-1.146-.155s-.927 0-1.146.155a.8.8 0 0 0-.199.2c-.155.218-.155.527-.155 1.145c0 .619 0 .928.155 1.146a.8.8 0 0 0 .2.2M6.654 8.155c-.618 0-.927 0-1.146-.155a.8.8 0 0 1-.199-.2c-.155-.217-.155-.527-.155-1.145c0-.619 0-.928.155-1.146a.8.8 0 0 1 .2-.2c.218-.154.527-.154 1.145-.154c.619 0 .928 0 1.146.155a.8.8 0 0 1 .2.199c.154.218.154.527.154 1.146s0 .928-.155 1.146A.8.8 0 0 1 7.8 8c-.218.155-.527.155-1.146.155M16.2 8c.218.155.527.155 1.146.155s.927 0 1.146-.155a.8.8 0 0 0 .199-.199c.155-.218.155-.528.155-1.146c0-.619 0-.928-.155-1.146a.8.8 0 0 0-.2-.2c-.218-.154-.527-.154-1.145-.154c-.619 0-.928 0-1.146.155a.8.8 0 0 0-.2.199c-.154.218-.154.527-.154 1.146s0 .928.155 1.146A.8.8 0 0 0 16.2 8"></path></svg></span></a><a class="social share-item weibo ui-interactive is-icon-only" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FJava%25E5%2586%2585%25E5%25AD%2598%25E8%25AE%25BF%25E9%2597%25AE%25E9%2587%258D%25E6%258E%2592%25E5%25BA%258F%25E7%259A%2584%25E7%25A0%2594%25E7%25A9%25B6%2F&amp;title=Java%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E7%9A%84%E7%A0%94%E7%A9%B6%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;summary=%E4%BB%80%E4%B9%88%E6%98%AF%E9%87%8D%E6%8E%92%E5%BA%8F%E8%AF%B7%E5%85%88%E7%9C%8B%E8%BF%99%E6%A0%B7%E4%B8%80%E6%AE%B5%E4%BB%A3%E7%A0%81%EF%BC%9A%0A12345678910111213141516171819202122public%20class%20PossibleReordering%20%7Bstatic%20int%20x%20%3D%200%2C%20y%20%3D%200%3Bstatic%20i..." target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Weibo" title="分享文章: Weibo"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.737 5.439l-.002.004zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.18.601l.014-.028zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.57-.18-.405-.615.375-.977.42-1.804 0-2.404-.781-1.112-2.915-1.053-5.364-.03 0 0-.766.331-.571-.271.376-1.217.315-2.224-.27-2.809-1.338-1.337-4.869.045-7.888 3.08C1.309 10.87 0 13.273 0 15.348c0 3.981 5.099 6.395 10.086 6.395 6.536 0 10.888-3.801 10.888-6.82 0-1.822-1.547-2.854-2.915-3.284v.01zm1.908-5.092c-.766-.856-1.908-1.187-2.96-.962-.436.09-.706.511-.616.932.09.42.511.691.932.602.511-.105 1.067.044 1.442.465.376.421.466.977.316 1.473-.136.406.089.856.51.992.405.119.857-.105.992-.512.33-1.021.12-2.178-.646-3.035l.03.045zm2.418-2.195c-1.576-1.757-3.905-2.419-6.054-1.968-.496.104-.812.587-.706 1.081.104.496.586.813 1.082.707 1.532-.331 3.185.15 4.296 1.383 1.112 1.246 1.429 2.943.947 4.416-.165.48.106 1.007.586 1.157.479.165.991-.104 1.157-.586.675-2.088.241-4.478-1.338-6.235l.03.045z"></path></svg></span></a><a class="social share-item x ui-interactive is-icon-only" href="https://x.com/intent/tweet?text=Java%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E7%9A%84%E7%A0%94%E7%A9%B6%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FJava%25E5%2586%2585%25E5%25AD%2598%25E8%25AE%25BF%25E9%2597%25AE%25E9%2587%258D%25E6%258E%2592%25E5%25BA%258F%25E7%259A%2584%25E7%25A0%2594%25E7%25A9%25B6%2F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: X" title="分享文章: X"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M14.234 10.162L22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299l-.929-1.329L3.076 1.56h3.182l5.965 8.532l.929 1.329l7.754 11.09h-3.182z"></path></svg></span></a><a class="social share-item telegram ui-interactive is-icon-only" href="https://t.me/share/url?url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FJava%25E5%2586%2585%25E5%25AD%2598%25E8%25AE%25BF%25E9%2597%25AE%25E9%2587%258D%25E6%258E%2592%25E5%25BA%258F%25E7%259A%2584%25E7%25A0%2594%25E7%25A9%25B6%2F&amp;text=Java%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E7%9A%84%E7%A0%94%E7%A9%B6%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Telegram" title="分享文章: Telegram"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"></path></svg></span></a><a class="social share-item email ui-interactive is-icon-only" href="mailto:?subject=Java%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E7%9A%84%E7%A0%94%E7%A9%B6%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;body=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FJava%25E5%2586%2585%25E5%25AD%2598%25E8%25AE%25BF%25E9%2597%25AE%25E9%2587%258D%25E6%258E%2592%25E5%25BA%258F%25E7%259A%2584%25E7%25A0%2594%25E7%25A9%25B6%2F" aria-label="分享文章: Email" title="分享文章: Email"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M3.172 5.172C2 6.343 2 8.229 2 12s0 5.657 1.172 6.828C4.343 20 6.229 20 10 20h4c3.771 0 5.657 0 6.828-1.172C22 17.657 22 15.771 22 12s0-5.657-1.172-6.828C19.657 4 17.771 4 14 4h-4C6.229 4 4.343 4 3.172 5.172m15.404 2.348a.75.75 0 0 1-.096 1.056l-2.196 1.83c-.887.739-1.605 1.338-2.24 1.746-.66.424-1.303.693-2.044.693s-1.384-.269-2.045-.693c-.634-.408-1.352-1.007-2.239-1.745L5.52 8.576a.75.75 0 1 1 .96-1.152l2.159 1.799c.933.777 1.58 1.315 2.128 1.667.529.34.888.455 1.233.455s.704-.115 1.233-.455c.547-.352 1.195-.89 2.128-1.667l2.159-1.8a.75.75 0 0 1 1.056.097" clip-rule="evenodd"></path></svg></span></a></div>
+      <div class="share-qrcode" id="share-qrcode" style="opacity:0;height:0"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&amp;data=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2FJava%25E5%2586%2585%25E5%25AD%2598%25E8%25AE%25BF%25E9%2597%25AE%25E9%2587%258D%25E6%258E%2592%25E5%25BA%258F%25E7%259A%2584%25E7%25A0%2594%25E7%25A9%25B6%2F" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></div>
+    </div>
+  </div>
+
+
+
+<div class="related-wrap slide-up" id="read-next"><section class="body"><div class="item" id="prev"><div class="note"><svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-left" aria-hidden="true"></svg> 较新文章</div><a href="/post/MIDDLEWARE/Nginx%20gzip%E5%8F%82%E6%95%B0%E8%AF%A6%E8%A7%A3%E5%8F%8A%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/">Nginx gzip参数详解及常见问题</a></div><div class="item" id="next"><div class="note">较早文章 <svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-right" aria-hidden="true"></svg></div><a href="/post/JAVA/Spring%20Boot%20%E6%8E%92%E9%99%A4%E8%87%AA%E5%8A%A8%E9%85%8D%E7%BD%AE%E7%9A%84%204%20%E7%A7%8D%E6%96%B9%E6%B3%95/">Spring Boot 排除自动配置的 4 种方法</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer slide-up footnote"><hr><div class="text"><p>本站由 <a href="/">dandeliono</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0">Stellar 2.0.0</a> 主题创建。<br>文章多为学习与工作中的笔记和转载整理,版权归原作者所有。</p>
+</div></footer>
+</main>
+<aside data-stellar-runtime-region="" id="rightbar-region" class="site-region site-region--rightbar" data-region="rightbar" aria-label="Rightbar"><div class="site-region__surface ui-drawer-surface"><div class="site-region__viewport"><div class="widgets widget-stack widget-stack--rightbar widget-stack--rightbar"><div class="widget-instance widget-instance--toc" data-widget-id="rightbar:0:toc" data-presentation="rightbar">
+
+
+<widget class="widget-wrapper slide-up toc" id="data-toc" collapse="false">
+  
+    <div class="widget-header dis-select">
+      <span class="name">本文目录</span>
+      <button type="button" class="cap-action ui-interactive card-hover card-hover--spotlight" data-shell-action="toggle-toc" aria-label="Toggle table of contents" aria-pressed="false"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg></span></button>
+    </div>
+  
+  <div class="widget-body"><ol class="toc ui-collection-adapter"><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E4%BB%80%E4%B9%88%E6%98%AF%E9%87%8D%E6%8E%92%E5%BA%8F"><span class="toc-text">什么是重排序</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#as-if-serial-%E8%AF%AD%E4%B9%89"><span class="toc-text">as-if-serial 语义</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E4%B8%8E%E5%86%85%E5%AD%98%E5%8F%AF%E8%A7%81%E6%80%A7"><span class="toc-text">内存访问重排序与内存可见性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E4%B8%8E-Java-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="toc-text">内存访问重排序与 Java 内存模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C"><span class="toc-text">内存屏障</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#Intel-64-IA-32-%E6%9E%B6%E6%9E%84%E4%B8%8B%E7%9A%84%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F"><span class="toc-text">Intel 64/IA-32 架构下的内存访问重排序</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E4%B8%80%E4%BE%8B-Intel-64-IA-32-%E6%9E%B6%E6%9E%84%E4%B8%8B%E7%9A%84%E4%BB%A3%E7%A0%81%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="toc-text">一例 Intel 64/IA-32 架构下的代码性能优化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%BA%8F"><span class="toc-text">序</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link ui-interactive" href="#%E9%99%84-1-%E5%A4%8D%E7%8E%B0%E9%87%8D%E6%8E%92%E5%BA%8F%E7%8E%B0%E8%B1%A1%E5%AE%9E%E9%AA%8C%E4%BB%A3%E7%A0%81"><span class="toc-text">附 1 复现重排序现象实验代码</span></a></li></ol></li></ol></div>
+  <div class="widget-footer"><a class="top ui-interactive" onclick="util.scrollTop()"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M20.536 3.464C22 4.93 22 7.286 22 12s0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464" opacity=".5"></path><path fill="currentColor" d="M9.53 12.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 9.56z"></path><path fill="currentColor" d="M9.53 16.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 13.56z"></path></svg></span><span>回到顶部</span></a></div>
+</widget>
+
+
+</div></div></div></div></aside>
+</div><button type="button" class="site-scrim" data-shell-action="dismiss-drawer" aria-label="Close navigation" tabindex="-1"></button><div data-stellar-runtime-region="" class="site-dock" role="group" aria-label="Layout panels">
+  <button type="button" class="site-dock__button site-dock__button--rightbar ui-interactive" aria-label="Open rightbar" aria-controls="rightbar-region" aria-expanded="false" data-shell-action="toggle-rightbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+  </button>
+  <button type="button" class="site-dock__button site-dock__button--leftbar ui-interactive" aria-label="Open leftbar" aria-controls="leftbar-region" aria-expanded="false" data-shell-action="toggle-leftbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"></path><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"></path></g></svg>
+  </button>
+</div>
+
+<dialog data-stellar-runtime-region="" class="search-dialog" id="site-search-dialog" aria-labelledby="site-search-title">
+  <div class="search-dialog__panel search-wrapper" id="site-search-wrapper" searching="false">
+    <div class="search-dialog__header">
+      <div class="search-form" role="search">
+        <span class="search-button" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+        <input type="search" class="search-input" id="site-search-input" aria-labelledby="site-search-title" placeholder="搜索">
+      </div>
+      <button type="button" class="search-dialog__close" data-shell-action="close-search" aria-label="关闭搜索">×</button>
+    </div>
+    
+      <div class="search-dialog__scope" role="radiogroup" aria-labelledby="site-search-title" hidden="">
+        <label class="search-dialog__scope-option" data-search-scope-option="all">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="all">
+          <span>全站</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="blog" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="blog">
+          <span>博客</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="current" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="current">
+          <span data-search-scope-current-label=""></span>
+        </label>
+      </div>
+    
+    <h2 class="search-dialog__title" id="site-search-title">站内搜索</h2>
+    <div class="search-result" id="site-search-result"></div>
+    <div class="search-no-result">没有找到内容！</div>
+  </div>
+</dialog>
+</div><div class="site-scripts">
+<script data-stellar-script="core" src="/js/stellar-icons.js?v=b068c3800a3fa93b"></script>
+
+<script data-stellar-script="defines">
+  window.canonical = window.stellarClientData.canonical;
+  const ctx = window.stellarClientData.ctx;
+  window.canonical.param = {permalink: "https://codearea.cc/post/JAVA/Java%E5%86%85%E5%AD%98%E8%AE%BF%E9%97%AE%E9%87%8D%E6%8E%92%E5%BA%8F%E7%9A%84%E7%A0%94%E7%A9%B6/", checklink: ctx.services.video.js};
+  ctx.date_suffix = {"just":"刚刚","min":"分钟前","hour":"小时前","day":"天前"};
+  if (ctx.search) Object.assign(ctx.search, {"more":"更多","no_more":"没有更多了"});
+  const def = window.stellarClientData.def;
+  window.ctx = ctx;
+  window.def = def;
+</script>
+
+
+<!-- core: 迁移期 DOM/资源兼容工具；Extension 注册与生命周期由 ESM runtime 所有 -->
+<script data-stellar-script="core" src="/js/utils.js?v=2.0.0"></script>
+<script data-stellar-script="core" src="/js/main.js?v=2.0.0" defer=""></script>
+<script data-stellar-script="core" defer="" src="/js/profile.js?v=2.0.0"></script>
+
+
+
+
+
+<script data-stellar-script="core" type="application/json" id="stellar-runtime-config">{"version":1,"root":"/","policy":{"cache":{"enabled":true,"defaultTtl":3600,"ttl":{"giscus":600,"waline":600,"artalk":600,"memos":600,"memos-user":86400,"sites":86400,"friends":86400,"friends_and_posts":86400,"siteinfo":86400},"maxEntries":200},"request":{"retries":2,"timeoutMs":5000,"idleTimeoutMs":3000,"maxCacheEntryBytes":204800},"features":{"codeCopyToastMs":2500},"providers":{"linkPrefetch":"flying_pages","lightbox":"fancybox","diagrams":"mermaid"}},"extensions":[{"id":"pin-slider","module":"/js/runtime/extensions/pin-slider.js","scope":"region","when":{"selector":".pin-slider"},"config":{}},{"id":"page-controls","module":"/js/runtime/extensions/page-controls.js","scope":"region","when":{"always":true},"config":{"highlight":"/js/search/highlight.js","tagtree":"/js/tagtree.js"}},{"id":"partial-navigation","module":"/js/runtime/extensions/partial-navigation.js","scope":"document","when":{"always":true},"config":{}},{"id":"color-scheme-switch","module":"/js/runtime/extensions/color-scheme-switch.js","scope":"document","when":{"always":true},"config":{"messages":{"light":"切换到浅色模式","dark":"切换到深色模式","auto":"切换到跟随系统配色"}}},{"id":"search","module":"/js/runtime/extensions/search.js","scope":"document","when":{"selector":".search-input"},"config":{"provider":"local","options":{"scope":"post","includeContent":true,"cacheTtlSeconds":86400},"assets":{"client":null,"provider":"/js/search/local-search.js","shortcut":"/js/search/shortcut.js"}}},{"id":"hero-parallax","module":"/js/runtime/extensions/hero-parallax.js","scope":"region","when":{"selector":".wiki-hero"},"config":{}},{"id":"hero-effect","module":"/js/runtime/extensions/hero-effect.js","scope":"region","when":{"selector":"canvas[data-hero-effect]"},"config":{}},{"id":"lazy-loading","module":"/js/runtime/extensions/lazy-loading.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"}},{"id":"deferred-icons","module":"/js/runtime/extensions/deferred-icons.js","scope":"region","when":{"selector":"svg.icon[data-icon]"},"config":{}},{"id":"dropdown","module":"/js/runtime/extensions/dropdown.js","scope":"region","when":{"selector":"details.dropdown"},"config":{}},{"id":"services","module":"/js/runtime/extensions/services.js","scope":"region","when":{"selector":"#artalk_container, #twikoo_container, #waline_container, .data-service, [class*='ds-'], a[cardlink], a[data-md-link][data-siteinfo-api], .site-card [data-siteinfo-api], .voice\u003eaudio, .video\u003evideo, .chat-file"},"config":{"marked":"https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js"}},{"id":"settings","module":"/js/runtime/extensions/settings.js","scope":"region","when":{"selector":".settings-page"},"config":{}},{"id":"link-prefetch","module":"/js/runtime/extensions/link-prefetch.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"}},{"id":"lightbox","module":"/js/runtime/extensions/lightbox.js","scope":"region","when":{"selector":"[data-fancybox]:not(.error), .with-fancybox, .ds-memos, .timenode p\u003eimg"},"config":{"enabled":true,"selector":".timenode p\u003eimg","assets":{"localCss":"/css/plugins/fancybox.css","js":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js","css":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"}}},{"id":"reveal","module":"/js/runtime/extensions/reveal.js","scope":"region","when":{"selector":".slide-up"},"config":{"enabled":true,"duration":800,"interval":200,"distance":8,"blur":4}},{"id":"code-copy","module":"/js/runtime/extensions/code-copy.js","scope":"region","when":{"selector":".code"},"config":{"assets":{"js":"/js/plugins/copycode.js"},"messages":{"label":"复制","copied":"复制成功","denied":"未获得剪贴板权限","unsupported":"当前浏览器不支持剪贴板或页面不是 HTTPS"}}},{"id":"adaptive-text","module":"/js/runtime/extensions/adaptive-text.js","scope":"region","when":{"selector":"[data-text-adaptive]"},"config":{"assets":{"colorJs":"/js/color.js","js":"/js/plugins/adaptive-text.js"}}},{"id":"swiper","module":"/js/runtime/extensions/swiper.js","scope":"region","when":{"selector":"#swiper-api"},"config":{"assets":{"localCss":"/css/plugins/swiper.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js","css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css"}}}]}</script>
+<script data-stellar-script="core" type="module" src="/js/runtime/index.js?v=2.0.0&amp;runtime=1"></script>
+
+
+<!-- inject -->
+
+
+<script data-stellar-script="core" defer="" src="/js/navigation-init.js?v=2.0.0"></script>
+</div>
+
+</body></html>

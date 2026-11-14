@@ -1,0 +1,704 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+  
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0" theme-name="Stellar" theme-version="2.0.0">
+  <link rel="canonical" href="https://codearea.cc/post/LINUX/tcpdump在启用TCP卸载功能的网卡上报告 checksum error ·/" data-stellar-page-meta="">
+  
+  <meta name="generator" content="Hexo 8.1.2">
+  <meta http-equiv="x-dns-prefetch-control" content="on">
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  <title data-stellar-page-meta="">tcpdump在启用TCP卸载功能的网卡上报告"checksum error" · - 个人笔记</title>
+  <script data-stellar-script="core">
+    (function () {
+      var key = 'stellar:v2:leftbar-state';
+      var fallback = "expanded";
+      try {
+        var value = localStorage.getItem(key);
+        document.documentElement.dataset.leftbarState = value === 'collapsed' || value === 'expanded' ? value : fallback;
+      } catch (error) {
+        document.documentElement.dataset.leftbarState = fallback;
+      }
+    })();
+  </script>
+
+  <meta name="description" content="在使用tcpdump对网卡进行抓包的时，很多时候会发现有cksum incorrect错误： 12sudo tcpdump -i eth0 -nn -vv -e  转包显示有很多incorrect数据包 123456711:54:08.747448 00:16:3e:0f:02:76 > 3c:8c:40:4e:dd:46, ethertype IPv4 (0x0800), length 7" data-stellar-page-meta="">
+<meta property="og:type" content="article" data-stellar-page-meta="">
+<meta property="og:title" content="tcpdump在启用TCP卸载功能的网卡上报告&quot;checksum error&quot; ·" data-stellar-page-meta="">
+<meta property="og:url" content="https://codearea.cc/post/LINUX/tcpdump%E5%9C%A8%E5%90%AF%E7%94%A8TCP%E5%8D%B8%E8%BD%BD%E5%8A%9F%E8%83%BD%E7%9A%84%E7%BD%91%E5%8D%A1%E4%B8%8A%E6%8A%A5%E5%91%8A%20checksum%20error%20%C2%B7/" data-stellar-page-meta="">
+<meta property="og:site_name" content="个人笔记" data-stellar-page-meta="">
+<meta property="og:description" content="在使用tcpdump对网卡进行抓包的时，很多时候会发现有cksum incorrect错误： 12sudo tcpdump -i eth0 -nn -vv -e  转包显示有很多incorrect数据包 123456711:54:08.747448 00:16:3e:0f:02:76 > 3c:8c:40:4e:dd:46, ethertype IPv4 (0x0800), length 7" data-stellar-page-meta="">
+<meta property="og:locale" content="zh_CN" data-stellar-page-meta="">
+<meta property="og:image" content="https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/wireshark-capture-1.png" data-stellar-page-meta="">
+<meta property="article:author" content="dandeliono" data-stellar-page-meta="">
+<meta property="article:published_time" content="2023-06-08T04:39:56.000Z" data-stellar-page-meta="">
+<meta property="article:modified_time" content="2023-06-08T04:39:56.000Z" data-stellar-page-meta="">
+<meta name="twitter:card" content="summary" data-stellar-page-meta="">
+<meta name="twitter:image" content="https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/wireshark-capture-1.png" data-stellar-page-meta=""><meta name="twitter:title" content="tcpdump在启用TCP卸载功能的网卡上报告&quot;checksum error&quot; ·" data-stellar-page-meta="">
+  
+  
+  <meta name="keywords" content="Java,Linux,中间件,云原生,技术笔记" data-stellar-page-meta="">
+
+  <!-- feed -->
+  
+
+  <link rel="preload" href="/css/main.css?v=2.0.0" as="style">
+  <link rel="stylesheet" href="/css/main.css?v=2.0.0">
+  <style>:root{--text-loading:"正在加载";--text-loading-error:"加载失败，请稍后重试。"}</style>
+
+
+  
+
+  
+
+  <script type="application/ld+json" data-stellar-page-meta="">{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"dandeliono","sameAs":["https://github.com/dandeliono"]},"dateCreated":"2023-06-08T04:39:56+00:00","dateModified":"2023-06-08T04:39:56+00:00","datePublished":"2023-06-08T04:39:56+00:00","description":"在使用tcpdump对网卡进行抓包的时，很多时候会发现有cksum incorrect错误：\n12sudo tcpdump -i eth0 -nn -vv -e\n\n转包显示有很多incorrect数据包\n123456711:54:08.747448 00:16:3e:0f:02:76 \u0026gt; 3c:8c:40:4e:dd:46, ethertype IPv4 (0x0800), lengt...","headline":"tcpdump在启用TCP卸载功能的网卡上报告\"checksum error\" ·","mainEntityOfPage":{"@type":"WebPage","@id":"https://codearea.cc/post/LINUX/tcpdump%E5%9C%A8%E5%90%AF%E7%94%A8TCP%E5%8D%B8%E8%BD%BD%E5%8A%9F%E8%83%BD%E7%9A%84%E7%BD%91%E5%8D%A1%E4%B8%8A%E6%8A%A5%E5%91%8A%20checksum%20error%20%C2%B7/"},"publisher":{"@type":"Organization","name":"dandeliono","sameAs":["https://github.com/dandeliono"]},"url":"https://codearea.cc/post/LINUX/tcpdump%E5%9C%A8%E5%90%AF%E7%94%A8TCP%E5%8D%B8%E8%BD%BD%E5%8A%9F%E8%83%BD%E7%9A%84%E7%BD%91%E5%8D%A1%E4%B8%8A%E6%8A%A5%E5%91%8A%20checksum%20error%20%C2%B7/","image":["https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/wireshark-capture-1.png"],"thumbnailUrl":"https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/wireshark-capture-1.png"}</script>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-WXLPP6W80J"></script>
+<script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-WXLPP6W80J');</script>
+<script async="" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8915554050347707" crossorigin="anonymous"></script>
+
+
+  <link rel="stylesheet" href="/css/stellar-icons.css?v=7c185ad1a9a79674">
+  <link rel="preload" as="script" href="/js/stellar-icons.js?v=b068c3800a3fa93b">
+  
+  
+</head>
+<body data-page-type="content" data-page-layout="post" data-article-style="tech"><div data-stellar-runtime-region="" id="site-cover" class="site-cover"></div><div class="site-shell" id="start" data-regions="leftbar rightbar"><div class="site-workspace">
+<aside data-stellar-runtime-region="" id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="Leftbar"><div class="site-region__surface ui-surface"><div class="site-region__decoration" aria-hidden="true"></div><div class="site-region__viewport"><header class="site-region__header site-region__zone site-region__zone--top">
+    <div class="widget-instance widget-instance--brand" data-widget-id="leftbar:fixed:brand" data-presentation="leftbar" data-leftbar-rail="">
+<header class="brand-header brand-header--regular brand-header--site"><div class="brand-wrap"><a class="brand-image brand-image--avatar" href="/"><img no-lazy="" src="https://avatars.githubusercontent.com/u/29496357" alt="" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></a><a class="brand-title" href="/"><div class="brand-name">个人笔记</div><div class="brand-tagline cap">永远相信美好的事情即将发生</div></a><div class="brand-stats data-service ds-ghinfo" data-api="https://api.github.com/users/dandeliono"><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=followers"><span class="brand-stat__value" type="text" id="followers"></span><span class="brand-stat__label">followers</span></a><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=following"><span class="brand-stat__value" type="text" id="following"></span><span class="brand-stat__label">following</span></a><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=repositories"><span class="brand-stat__value" type="text" id="public_repos"></span><span class="brand-stat__label">repos</span></a></div></div><div class="brand-search">
+
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<button class="ui-collection__item ui-interactive card-hover card-hover--spotlight search-trigger has-hover-surface" type="button" title="搜索" aria-label="搜索" data-shell-action="open-search" data-search-instance="leftbar-brand-search" data-search-domain="blog" data-search-domain-label="博客" data-search-domain-blog="true">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">搜索</span>
+      
+      
+    </span>
+  
+  <kbd class="search-shortcut" aria-hidden="true">⌘K</kbd>
+
+  
+</button>
+
+  
+</div>
+
+
+</div></header>
+</div>
+  </header>
+  <div class="site-region__body site-region__zone site-region__zone--body">
+    <div class="widget-instance widget-instance--menu" data-widget-id="leftbar:fixed:menu" data-presentation="leftbar" data-leftbar-rail="">
+
+
+<nav class="menu dis-select">
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight is-active" href="/" title="近期发布" aria-current="page">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M5.879 2.879C5 3.757 5 5.172 5 8v8c0 2.828 0 4.243.879 5.121C6.757 22 8.172 22 11 22h2c2.828 0 4.243 0 5.121-.879C19 20.243 19 18.828 19 16V8c0-2.828 0-4.243-.879-5.121C17.243 2 15.828 2 13 2h-2c-2.828 0-4.243 0-5.121.879M8.25 17a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75M9 12.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM8.25 9A.75.75 0 0 1 9 8.25h6a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 9" clip-rule="evenodd"></path><path fill="currentColor" d="M5.235 4.058C5 4.941 5 6.177 5 8v8c0 1.823 0 3.058.235 3.942L5 19.924c-.975-.096-1.631-.313-2.121-.803C2 18.243 2 16.828 2 14v-4c0-2.829 0-4.243.879-5.121c.49-.49 1.146-.707 2.121-.803zm13.53 15.884C19 19.058 19 17.822 19 16V8c0-1.823 0-3.059-.235-3.942l.235.018c.975.096 1.631.313 2.121.803C22 5.757 22 7.17 22 9.999v4c0 2.83 0 4.243-.879 5.122c-.49.49-1.146.707-2.121.803z" opacity=".5"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">近期发布</span>
+      
+      
+    </span>
+  
+  
+  <span class="ui-collection__indicator"></span>
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/categories/" title="分类">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M2 6.94975C2 6.06722 2 5.62595 2.06935 5.25839C2.37464 3.64031 3.64031 2.37464 5.25839 2.06935C5.62595 2 6.06722 2 6.94975 2C7.33642 2 7.52976 2 7.71557 2.01738C8.51665 2.09229 9.27652 2.40704 9.89594 2.92051C10.0396 3.03961 10.1763 3.17633 10.4497 3.44975L11 4C11.8158 4.81578 12.2237 5.22367 12.7121 5.49543C12.9804 5.64471 13.2651 5.7626 13.5604 5.84678C14.0979 6 14.6747 6 15.8284 6H16.2021C18.8345 6 20.1506 6 21.0062 6.76946C21.0849 6.84024 21.1598 6.91514 21.2305 6.99383C22 7.84935 22 9.16554 22 11.7979V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V6.94975Z" opacity=".5"></path><path d="M20 6.23751C19.9992 5.94016 19.9949 5.76263 19.9746 5.60842C19.7974 4.26222 18.7381 3.2029 17.3919 3.02567C17.1969 3 16.9647 3 16.5003 3H9.98828C10.1042 3.10392 10.2347 3.23445 10.45 3.44975L11.0003 4C11.8161 4.81578 12.2239 5.22367 12.7124 5.49543C12.9807 5.64471 13.2653 5.7626 13.5606 5.84678C14.0982 6 14.675 6 15.8287 6H16.2024C17.9814 6 19.1593 6 20 6.23751Z"></path><path fill-rule="evenodd" d="M12.25 10C12.25 9.58579 12.5858 9.25 13 9.25H18C18.4142 9.25 18.75 9.58579 18.75 10C18.75 10.4142 18.4142 10.75 18 10.75H13C12.5858 10.75 12.25 10.4142 12.25 10Z" clip-rule="evenodd"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">分类</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/tags/" title="标签">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M10.7226 3.20068C10.8335 2.80158 10.5998 2.38817 10.2007 2.27731C9.80163 2.16645 9.38822 2.40011 9.27736 2.79921L7.76327 8.24995H4C3.58579 8.24995 3.25 8.58573 3.25 8.99995C3.25 9.41416 3.58579 9.74995 4 9.74995H7.3466L5.81882 15.2499H2C1.58579 15.2499 1.25 15.5857 1.25 15.9999C1.25 16.4142 1.58579 16.7499 2 16.7499H5.40216L4.27736 20.7992C4.1665 21.1983 4.40016 21.6117 4.79927 21.7226C5.19837 21.8334 5.61178 21.5998 5.72264 21.2007L6.95895 16.7499H14.4022L13.2774 20.7992C13.1665 21.1983 13.4002 21.6117 13.7993 21.7226C14.1984 21.8334 14.6118 21.5998 14.7226 21.2007L15.959 16.7499H20C20.4142 16.7499 20.75 16.4142 20.75 15.9999C20.75 15.5857 20.4142 15.2499 20 15.2499H16.3756L17.9034 9.74995H22C22.4142 9.74995 22.75 9.41416 22.75 8.99995C22.75 8.58573 22.4142 8.24995 22 8.24995H18.3201L19.7226 3.20068C19.8335 2.80158 19.5998 2.38817 19.2007 2.27731C18.8016 2.16645 18.3882 2.40011 18.2774 2.79921L16.7633 8.24995H9.32006L10.7226 3.20068ZM14.8188 15.2499L16.3466 9.74995H8.9034L7.37562 15.2499H14.8188Z" clip-rule="evenodd"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">标签</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/archives/" title="归档">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M6.94028 2C7.35614 2 7.69326 2.32421 7.69326 2.72414V4.18487C8.36117 4.17241 9.10983 4.17241 9.95219 4.17241H13.9681C14.8104 4.17241 15.5591 4.17241 16.227 4.18487V2.72414C16.227 2.32421 16.5641 2 16.98 2C17.3958 2 17.733 2.32421 17.733 2.72414V4.24894C19.178 4.36022 20.1267 4.63333 20.8236 5.30359C21.5206 5.97385 21.8046 6.88616 21.9203 8.27586L22 9H2.92456H2V8.27586C2.11571 6.88616 2.3997 5.97385 3.09665 5.30359C3.79361 4.63333 4.74226 4.36022 6.1873 4.24894V2.72414C6.1873 2.32421 6.52442 2 6.94028 2Z"></path><path d="M21.9995 14.0001V12.0001C21.9995 11.161 21.9963 9.66527 21.9834 9H2.00917C1.99626 9.66527 1.99953 11.161 1.99953 12.0001V14.0001C1.99953 17.7713 1.99953 19.6569 3.1711 20.8285C4.34267 22.0001 6.22829 22.0001 9.99953 22.0001H13.9995C17.7708 22.0001 19.6564 22.0001 20.828 20.8285C21.9995 19.6569 21.9995 17.7713 21.9995 14.0001Z" opacity=".5"></path><path d="M18 17C18 17.5523 17.5523 18 17 18C16.4477 18 16 17.5523 16 17C16 16.4477 16.4477 16 17 16C17.5523 16 18 16.4477 18 17Z"></path><path d="M18 13C18 13.5523 17.5523 14 17 14C16.4477 14 16 13.5523 16 13C16 12.4477 16.4477 12 17 12C17.5523 12 18 12.4477 18 13Z"></path><path d="M13 17C13 17.5523 12.5523 18 12 18C11.4477 18 11 17.5523 11 17C11 16.4477 11.4477 16 12 16C12.5523 16 13 16.4477 13 17Z"></path><path d="M13 13C13 13.5523 12.5523 14 12 14C11.4477 14 11 13.5523 11 13C11 12.4477 11.4477 12 12 12C12.5523 12 13 12.4477 13 13Z"></path><path d="M8 17C8 17.5523 7.55228 18 7 18C6.44772 18 6 17.5523 6 17C6 16.4477 6.44772 16 7 16C7.55228 16 8 16.4477 8 17Z"></path><path d="M8 13C8 13.5523 7.55228 14 7 14C6.44772 14 6 13.5523 6 13C6 12.4477 6.44772 12 7 12C7.55228 12 8 12.4477 8 13Z"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">归档</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://tools.codearea.cc" title="工具">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M14.0516 2C15.7318 1.99999 17.0627 1.99997 18.1043 2.14245C19.1762 2.28908 20.0438 2.59803 20.728 3.29418C21.4122 3.99033 21.7159 4.87308 21.86 5.9637C22 7.02342 22 8.37752 22 10.087V10.0871V13.913V13.913C22 15.6225 22 16.9766 21.86 18.0363C21.7159 19.1269 21.4122 20.0097 20.728 20.7058C20.0438 21.402 19.1762 21.7109 18.1043 21.8575C17.0627 22 15.7318 22 14.0517 22H14.0516H13.9484H13.9483C12.2681 22 10.9373 22 9.89575 21.8575C8.82382 21.7109 7.95621 21.402 7.27199 20.7058C6.58778 20.0097 6.28413 19.1269 6.14001 18.0363C5.99998 16.9766 5.99999 15.6225 6 13.913V13.9129V10.087V10.087C5.99999 8.3775 5.99998 7.02343 6.14001 5.9637C6.28413 4.87308 6.58778 3.99033 7.27199 3.29418C7.95621 2.59803 8.82382 2.28908 9.89575 2.14245C10.9373 1.99997 12.2682 1.99999 13.9484 2H13.9484H14.0516H14.0516Z" opacity=".5"></path><path d="M12 18.25C11.5858 18.25 11.25 18.5858 11.25 19C11.25 19.4142 11.5858 19.75 12 19.75H17C17.4142 19.75 17.75 19.4142 17.75 19C17.75 18.5858 17.4142 18.25 17 18.25H12Z"></path><path d="M2 14.5C2 13.0955 2 12.3933 2.33706 11.8889C2.48298 11.6705 2.67048 11.483 2.88886 11.3371C3.39331 11 4.09554 11 5.5 11C6.90446 11 7.60669 11 8.11114 11.3371C8.32952 11.483 8.51702 11.6705 8.66294 11.8889C9 12.3933 9 13.0955 9 14.5V18.5C9 19.9045 9 20.6067 8.66294 21.1111C8.51702 21.3295 8.32952 21.517 8.11114 21.6629C7.60669 22 6.90446 22 5.5 22C4.09554 22 3.39331 22 2.88886 21.6629C2.67048 21.517 2.48298 21.3295 2.33706 21.1111C2 20.6067 2 19.9045 2 18.5V14.5Z"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">工具</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div>
+
+</nav>
+
+</div>
+    <div class="widgets widget-stack widget-stack--leftbar widget-stack--body"><div class="widget-instance widget-instance--recent" data-widget-id="leftbar:1:recent" data-presentation="leftbar">
+
+<widget class="widget-wrapper slide-up recent-widget">
+  
+    <div class="widget-header dis-select">
+      <span class="name">最近更新</span>
+      
+    </div>
+  
+  <div class="widget-body"><div class="ui-collection" data-layout="list" data-variant="nav" data-density="compact">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/OpenJDK%2021%20%E5%8D%87%E7%BA%A7%E6%8C%87%E5%8D%97/" title="OpenJDK 21 升级指南">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">O</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">OpenJDK 21 升级指南</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/%E4%BD%BF%E7%94%A8%20OpenRewrite%20%E4%BC%98%E5%8C%96%E4%BB%A3%E7%A0%81/" title="使用 OpenRewrite 优化代码">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">使</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">使用 OpenRewrite 优化代码</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/Maven%20%E7%A7%81%E6%9C%8D%20Nexus%20%E5%8D%87%E7%BA%A7%E5%AE%9E%E5%BD%95/" title="Maven 私服 Nexus 升级实录">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">M</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Maven 私服 Nexus 升级实录</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/%E5%AE%9A%E5%88%B6Ubuntu%E5%AE%89%E8%A3%85%E9%95%9C%E5%83%8F%E7%9A%84%E4%B8%A4%E7%A7%8D%E6%96%B9%E6%B3%95/" title="定制Ubuntu安装镜像的两种方法">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">定</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">定制Ubuntu安装镜像的两种方法</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/%E5%B8%B8%E8%A7%81%E7%9A%84bpftrace%E8%84%9A%E6%9C%AC/" title="常见的bpftrace脚本">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">常</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">常见的bpftrace脚本</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20etc%20shadow%20%E6%96%87%E4%BB%B6%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" title="Linux /etc/shadow 文件学习笔记">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux /etc/shadow 文件学习笔记</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20%E4%B8%8B%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E4%B8%8E%E6%8A%80%E5%B7%A7%E6%B1%87%E6%80%BB/" title="Linux 下常用命令与技巧汇总">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux 下常用命令与技巧汇总</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/ATOP%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E6%80%BB%E7%BB%93/" title="ATOP工作原理总结">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">A</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">ATOP工作原理总结</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20%E6%89%A9%E5%AE%B9%20%E6%A0%B9%E5%88%86%E5%8C%BA(LVM+%E9%9D%9ELVM)/" title="Linux 扩容 / 根分区(LVM+非LVM)">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux 扩容 / 根分区(LVM+非LVM)</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/ALG/%E5%BB%B6%E8%BF%9F%E5%8F%8C%E5%88%A0%E5%A6%82%E6%AD%A4%E5%A5%BD%E7%94%A8%EF%BC%8C%E4%B8%BA%E4%BD%95%E5%A4%A7%E5%8E%82%E4%BB%8E%E6%9D%A5%E4%B8%8D%E7%94%A8Cache-aside%E4%B8%8B%E6%95%B0%E6%8D%AE%E5%8F%98%E6%9B%B4%E6%8E%A8%E8%8D%90%E4%BD%BF%E7%94%A8%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E7%9A%84%E7%AD%96%E7%95%A5%EF%BC%8C%E4%B8%BA%E9%99%8D%E4%BD%8E%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%80%E8%87%B4%E9%80%9A%E5%B8%B8%E4%BC%9A%E9%85%8D%E5%90%88%E5%BB%B6%E8%BF%9F/" title="延迟双删如此好用，为何大厂从来不用Cache-aside下数据变更推荐使用删除缓存的策略，为降低数据不一致通常会配合延迟">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">延</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">延迟双删如此好用，为何大厂从来不用Cache-aside下数据变更推荐使用删除缓存的策略，为降低数据不一致通常会配合延迟</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div></div>
+  
+</widget>
+
+
+</div></div>
+  </div>
+  <footer class="site-region__footer">
+    <div class="site-region__footer-actions"><div class="widget-instance widget-instance--actions" data-widget-id="leftbar:fixed:actions" data-presentation="leftbar">
+<div class="region-actions social-wrap ui-collection" data-layout="inline" data-variant="nav" data-density="compact"><a class="social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" href="https://github.com/dandeliono" target="_blank" rel="external nofollow noopener noreferrer"><span class="ui-icon"><svg class="icon" viewBox="0 0 1 1" data-icon="default:github" aria-hidden="true"></svg></span></a></div>
+</div></div>
+    <div class="site-region__system ui-collection" data-layout="inline" data-variant="nav" data-density="compact">
+      <div class="site-region__settings"><div class="widget-instance widget-instance--settings" data-widget-id="leftbar:fixed:settings" data-presentation="leftbar" data-leftbar-rail="">
+<a class="settings-widget ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/settings/" data-profile-provider="" data-profile-identity-enabled="false" data-profile-fallback-avatar="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg" data-settings-placement="leftbar" data-settings-label="设置" aria-label="设置" title="设置">
+  <span class="settings-widget__avatar" aria-hidden="true">
+    <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><path fill-rule="evenodd" d="M12.4277 2C11.3139 2 10.2995 2.6007 8.27081 3.80211L7.58466 4.20846C5.55594 5.40987 4.54158 6.01057 3.98466 7C3.42773 7.98943 3.42773 9.19084 3.42773 11.5937V12.4063C3.42773 14.8092 3.42773 16.0106 3.98466 17C4.54158 17.9894 5.55594 18.5901 7.58466 19.7915L8.27081 20.1979C10.2995 21.3993 11.3139 22 12.4277 22C13.5416 22 14.5559 21.3993 16.5847 20.1979L17.2708 19.7915C19.2995 18.5901 20.3139 17.9894 20.8708 17C21.4277 16.0106 21.4277 14.8092 21.4277 12.4063V11.5937C21.4277 9.19084 21.4277 7.98943 20.8708 7C20.3139 6.01057 19.2995 5.40987 17.2708 4.20846L16.5847 3.80211C14.5559 2.6007 13.5416 2 12.4277 2Z" clip-rule="evenodd" opacity=".5"></path><path d="M12.4277 8.25C10.3567 8.25 8.67773 9.92893 8.67773 12C8.67773 14.0711 10.3567 15.75 12.4277 15.75C14.4988 15.75 16.1777 14.0711 16.1777 12C16.1777 9.92893 14.4988 8.25 12.4277 8.25Z"></path></g></svg></span>
+  </span>
+  <span class="settings-widget__name ui-collection__title">设置</span>
+</a>
+</div></div>
+      <button type="button" class="leftbar-state-toggle ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" aria-label="Collapse leftbar" aria-expanded="true" data-shell-action="toggle-leftbar"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M3.172 4.172C2 5.343 2 7.229 2 11v2c0 3.771 0 5.657 1.172 6.828S6.229 21 10 21h5V3h-5C6.229 3 4.343 3 3.172 4.172" clip-rule="evenodd" opacity=".5"></path><path fill="currentColor" d="M5.5 9.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zm1 4a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5zM22 13v-2c0-3.771 0-5.657-1.172-6.828c-.974-.975-3.192-1.139-5.828-1.166v17.988c2.636-.027 4.854-.191 5.828-1.166C22 18.657 22 16.771 22 13"></path></svg></span></button>
+    </div>
+  </footer></div></div></aside>
+<main data-stellar-runtime-region="" class="site-main" id="main">
+
+
+<div class="article-banner-wrap slide-up"><div class="article banner top">
+  <div class="content">
+    
+    <div class="top bread-nav footnote"><div class="top-row"><div class="left" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/Linux/">Linux</a>
+</div><div class="right"><span class="cap reading">3982 字 · 预计阅读 14 分钟</span></div></div><div class="meta-row">
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2023-06-08T04:39:56.000Z">2023-06-08</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2023-06-08T04:39:56.000Z">2023-06-08</time></span></div>
+</div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>tcpdump在启用TCP卸载功能的网卡上报告"checksum error" ·</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div></div>
+<article class="md-text content slide-up"><p>在使用<code>tcpdump</code>对网卡进行抓包的时，很多时候会发现有<code>cksum incorrect</code>错误：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo tcpdump -i eth0 -nn -vv -e</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>转包显示有很多<code>incorrect</code>数据包</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">11:54:08.747448 00:16:3e:0f:02:76 &gt; 3c:8c:40:4e:dd:46, ethertype IPv4 (0x0800), length 70: (tos 0x0, ttl 128, id 12416, offset 0, flags [DF], proto: TCP (6), length: 56) 69.172.201.153.20648 &gt; 218.92.186.154.32233: P, cksum 0xeace (incorrect (-&gt; 0xd8b6), 649:665(16) ack 0 win 511</span><br><span class="line">11:54:08.747631 3c:8c:40:01:87:f5 &gt; 00:16:3e:0f:02:76, ethertype IPv4 (0x0800), length 60: (tos 0x0, ttl  54, id 43880, offset 0, flags [DF], proto: TCP (6), length: 40) 49.80.162.95.25453 &gt; 69.172.201.153.20648: ., cksum 0x08de (correct), 0:0(0) ack 643 win 64379</span><br><span class="line">11:54:08.747673 3c:8c:40:02:72:68 &gt; 00:16:3e:0f:02:76, ethertype IPv4 (0x0800), length 86: (tos 0x0, ttl  51, id 26279, offset 0, flags [DF], proto: TCP (6), length: 72) 49.81.57.179.18212 &gt; 69.172.201.153.5110: P, cksum 0xfc9e (correct), 1:33(32) ack 1 win 63939</span><br><span class="line">11:54:08.747685 3c:8c:40:01:87:f5 &gt; 00:16:3e:0f:02:76, ethertype IPv4 (0x0800), length 60: (tos 0x0, ttl  51, id 16050, offset 0, flags [DF], proto: TCP (6), length: 40) 219.139.32.98.13599 &gt; 69.172.201.153.20648: ., cksum 0xc58e (correct), 4:4(0) ack 643 win 64523</span><br><span class="line">11:54:08.747777 00:16:3e:0f:02:76 &gt; 3c:8c:40:4e:dd:46, ethertype IPv4 (0x0800), length 62: (tos 0x0, ttl 128, id 6219, offset 0, flags [DF], proto: TCP (6), length: 48) 69.172.201.153.20648 &gt; 219.139.32.98.13599: P, cksum 0x51bd (incorrect (-&gt; 0x5783), 643:651(8) ack 4 win 511</span><br><span class="line">11:54:08.748145 3c:8c:40:02:79:e8 &gt; 00:16:3e:0f:02:76, ethertype IPv4 (0x0800), length 60: (tos 0x0, ttl  54, id 16715, offset 0, flags [DF], proto: TCP (6), length: 40) 221.231.4.18.4134 &gt; 69.172.201.153.20648: ., cksum 0x78e2 (correct), 0:0(0) ack 643 win 65519</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<blockquote>
+<p>上述案例中IP地址是伪造的，仅做示例</p>
+</blockquote>
+<p>参考 <a target="_blank" rel="noopener" href="https://sokratisg.net/2012/04/01/udp-tcp-checksum-errors-from-tcpdump-nic-hardware-offloading/" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>UDP / TCP Checksum errors from tcpdump &amp; NIC Hardware Offloading</a></p>
+<p>当是使用<code>tcpdump</code>跟踪<code>UDP</code>或<code>TCP</code>数据流的时候，会看到大多数数据包显示<code>checksum</code>错误，这是因为网卡(NIC)启用了<code>checksum offloading</code>而<code>tcpdump</code>是从内核读取IP数据包，比NIC网卡芯片执行checksum要早。检查命令的方法是（假设检查DNS查询的数据包）</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo tcpdump -i eth0 -vvv -nn udp dst port 53</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>我模仿使用如下命令检查虚拟机<code>69.172.201.153.123</code>的UDP包，可以看到发出的UDP包的<code>checksum</code>都是错误的，从外面返回的UDP包则显示<code>checksum</code>正常</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo tcpdump -i eth0 -vvv -nn udp and host 69.172.201.153</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>可以看到</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line">tcpdump: WARNING: eth0: no IPv4 address assigned</span><br><span class="line">tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 96 bytes</span><br><span class="line">12:25:26.388718 IP (tos 0xc0, ttl  64, id 0, offset 0, flags [DF], proto: UDP (17), length: 76) 69.172.201.153.123 &gt; 58.216.105.122: [bad udp cksum 559b!] NTPv4, length 48</span><br><span class="line">    Client, Leap indicator:  (0), Stratum 3, poll 7s, precision -22</span><br><span class="line">    Root Delay: 0.030166, Root dispersion: 0.024185, Reference-ID: 110.75.186.249</span><br><span class="line">      Reference Timestamp:  3677372472.395108491 (2016/07/13 12:21:12)</span><br><span class="line">      Originator Timestamp: 3677372596.423037379 (2016/07/13 12:23:16)</span><br><span class="line">      Receive Timestamp:    3677372596.434980779 (2016/07/13 12:23:16)</span><br><span class="line">      Transmit Timestamp:   3677372726.389321297 (2016/07/13 12:25:26)</span><br><span class="line">        Originator - Receive Timestamp:  +0.011943411</span><br><span class="line">        Originator - Transmit Timestamp: +129.966283917</span><br><span class="line">12:25:26.412829 IP (tos 0x0, ttl  57, id 0, offset 0, flags [DF], proto: UDP (17), length: 76) 58.216.105.122 &gt; 69.172.201.153.123: [udp sum ok] NTPv4, length 48</span><br><span class="line">    Server, Leap indicator:  (0), Stratum 2, poll 7s, precision -24</span><br><span class="line">    Root Delay: 0.000106, Root dispersion: 0.001434, Reference-ID: 10.137.38.86</span><br><span class="line">      Reference Timestamp:  3677372712.335200518 (2016/07/13 12:25:12)</span><br><span class="line">      Originator Timestamp: 3677372726.389321297 (2016/07/13 12:25:26)</span><br><span class="line">      Receive Timestamp:    3677372726.401639968 (2016/07/13 12:25:26)</span><br><span class="line">      Transmit Timestamp:   3677372726.401653856 (2016/07/13 12:25:26)</span><br><span class="line">        Originator - Receive Timestamp:  +0.012318663</span><br><span class="line">        Originator - Transmit Timestamp: +0.012332545</span><br><span class="line">12:25:30.386709 IP (tos 0xc0, ttl  64, id 0, offset 0, flags [DF], proto: UDP (17), length: 76) 69.172.201.153.123 &gt; 110.75.186.248.123: [bad udp cksum 8059!] NTPv4, length 48</span><br><span class="line">    Client, Leap indicator:  (0), Stratum 3, poll 10s, precision -22</span><br><span class="line">    Root Delay: 0.030166, Root dispersion: 0.024246, Reference-ID: 110.75.186.249</span><br><span class="line">      Reference Timestamp:  3677372472.395108491 (2016/07/13 12:21:12)</span><br><span class="line">      Originator Timestamp: 0.000000000</span><br><span class="line">      Receive Timestamp:    0.000000000</span><br><span class="line">      Transmit Timestamp:   3677372730.387331545 (2016/07/13 12:25:30)</span><br><span class="line">        Originator - Receive Timestamp:  0.000000000</span><br><span class="line">        Originator - Transmit Timestamp: 3677372730.387331545 (2016/07/13 12:25:30)</span><br><span class="line">12:25:32.387721 IP (tos 0xc0, ttl  64, id 0, offset 0, flags [DF], proto: UDP (17), length: 76) 69.172.201.153.123 &gt; 115.28.122.198.123: [bad udp cksum 4b0a!] NTPv4, length 48</span><br><span class="line">    Client, Leap indicator:  (0), Stratum 3, poll 7s, precision -22</span><br><span class="line">    Root Delay: 0.030166, Root dispersion: 0.024276, Reference-ID: 110.75.186.249</span><br><span class="line">      Reference Timestamp:  3677372472.395108491 (2016/07/13 12:21:12)</span><br><span class="line">      Originator Timestamp: 3677372601.409083545 (2016/07/13 12:23:21)</span><br><span class="line">      Receive Timestamp:    3677372601.422362774 (2016/07/13 12:23:21)</span><br><span class="line">      Transmit Timestamp:   3677372732.388339668 (2016/07/13 12:25:32)</span><br><span class="line">        Originator - Receive Timestamp:  +0.013279223</span><br><span class="line">        Originator - Transmit Timestamp: +130.979256153</span><br><span class="line">12:25:32.419074 IP (tos 0x0, ttl  54, id 0, offset 0, flags [DF], proto: UDP (17), length: 76) 115.28.122.198.123 &gt; 69.172.201.153.123: [udp sum ok] NTPv4, length 48</span><br><span class="line">    Server, Leap indicator:  (0), Stratum 2, poll 7s, precision -24</span><br><span class="line">    Root Delay: 0.041046, Root dispersion: 0.002349, Reference-ID: 10.137.38.86</span><br><span class="line">      Reference Timestamp:  3677372656.633167505 (2016/07/13 12:24:16)</span><br><span class="line">      Originator Timestamp: 3677372732.388339668 (2016/07/13 12:25:32)</span><br><span class="line">      Receive Timestamp:    3677372732.406500339 (2016/07/13 12:25:32)</span><br><span class="line">      Transmit Timestamp:   3677372732.406535744 (2016/07/13 12:25:32)</span><br><span class="line">        Originator - Receive Timestamp:  +0.018160656</span><br><span class="line">        Originator - Transmit Timestamp: +0.018196072</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>检查 <code>eth0</code>，发现原来<code>tx-checksumming</code>是开启的，而<code>rx-checksumming</code>则是关闭的</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo ethtool -k eth0</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>输出</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Offload parameters for eth0:</span><br><span class="line">rx-checksumming: off</span><br><span class="line">tx-checksumming: on</span><br><span class="line">scatter-gather: on</span><br><span class="line">tcp segmentation offload: on</span><br><span class="line">udp fragmentation offload: off</span><br><span class="line">generic segmentation offload: on</span><br><span class="line">generic-receive-offload: off</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>这台物理服务器上运行了虚拟化，在虚拟机中测试了<code>dig @8.8.8.8 www.sina.com.cn</code>，可以在物理服务器上抓包显示</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">13:09:49.944926 IP (tos 0x0, ttl  64, id 48092, offset 0, flags [none], proto: UDP (17), length: 61) 69.172.201.153.37421 &gt; 8.8.8.8.53: [bad udp cksum b1aa!]  12774+ A? www.sina.com.cn. (33)</span><br><span class="line">13:09:50.945615 IP (tos 0x0, ttl  64, id 48093, offset 0, flags [none], proto: UDP (17), length: 61) 69.172.201.153.37421 &gt; 8.8.8.8.53: [bad udp cksum b1aa!]  12774+ A? www.sina.com.cn. (33)</span><br><span class="line">13:09:51.018821 IP (tos 0x0, ttl  42, id 23786, offset 0, flags [none], proto: UDP (17), length: 183) 8.8.8.8.53 &gt; 69.172.201.153.37421:  12774 q: A? www.sina.com.cn. 5/0/0 www.sina.com.cn. CNAME[|domain]</span><br><span class="line">13:09:51.092146 IP (tos 0x0, ttl  42, id 51428, offset 0, flags [none], proto: UDP (17), length: 183) 8.8.8.8.53 &gt; 69.172.201.153.37421:  12774 q: A? www.sina.com.cn. 5/0/0 www.sina.com.cn. CNAME[|domain]</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>尝试在虚拟机中关闭<code>TCO</code>(注意，<code>ethtool</code>检查的时候参数是小写的<code>-k</code>，当<code>ethtool</code>设置参数的时候是大写的<code>-K</code>)</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ethtool -K eth1 tx off</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Actual changes:</span><br><span class="line">rx-checksumming: off</span><br><span class="line">tx-checksumming: off</span><br><span class="line">scatter-gather: off</span><br><span class="line">tcp-segmentation-offload: off</span><br><span class="line">udp-fragmentation-offload: off</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>再次检查，发现<code>rx</code>和<code>tx</code>的<code>checksum</code>被同时关闭了</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">ethtool -k eth1</span><br><span class="line">Features for eth1:</span><br><span class="line">rx-checksumming: off</span><br><span class="line">tx-checksumming: off</span><br><span class="line">scatter-gather: off</span><br><span class="line">tcp-segmentation-offload: off</span><br><span class="line">udp-fragmentation-offload: off</span><br><span class="line">generic-segmentation-offload: on</span><br><span class="line">generic-receive-offload: off</span><br><span class="line">large-receive-offload: off</span><br><span class="line">ntuple-filters: off</span><br><span class="line">receive-hashing: off</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<blockquote>
+<p>奇怪：怎么<code>tx off</code>设置会同时关闭<code>tx</code>和<code>rx</code>的checksum?</p>
+</blockquote>
+<p>不过，验证下来发现，在虚拟机中关闭<code>TCO</code>（<code>tx-checksumming</code>和<code>rx-checksumming</code>）后，在NC上抓包显示，已经不再出现数据包发送的时候的<code>checksum</code>错误</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">13:14:54.749620 IP (tos 0x0, ttl  64, id 48095, offset 0, flags [none], proto: UDP (17), length: 61) 69.172.201.153.53614 &gt; 8.8.8.8.53: [udp sum ok]  4027+ A? www.sina.com.cn. (33)</span><br><span class="line">13:14:54.964426 IP (tos 0x0, ttl  42, id 19522, offset 0, flags [none], proto: UDP (17), length: 183) 8.8.8.8.53 &gt; 69.172.201.153.53614:  4027 q: A? www.sina.com.cn. 5/0/0 www.sina.com.cn. CNAME[|domain]</span><br><span class="line"></span><br><span class="line">13:16:12.388133 IP (tos 0xc0, ttl  64, id 0, offset 0, flags [DF], proto: UDP (17), length: 76) 69.172.201.153.123 &gt; 58.216.105.122: [udp sum ok] NTPv4, length 48</span><br><span class="line">    Client, Leap indicator:  (0), Stratum 3, poll 9s, precision -22</span><br><span class="line">    Root Delay: 0.030258, Root dispersion: 0.028045, Reference-ID: 10.143.33.50</span><br><span class="line">      Reference Timestamp:  3677375656.402239203 (2016/07/13 13:14:16)</span><br><span class="line">      Originator Timestamp: 3677375243.399526447 (2016/07/13 13:07:23)</span><br><span class="line">      Receive Timestamp:    3677375243.411563843 (2016/07/13 13:07:23)</span><br><span class="line">      Transmit Timestamp:   3677375772.388326644 (2016/07/13 13:16:12)</span><br><span class="line">        Originator - Receive Timestamp:  +0.012037376</span><br><span class="line">        Originator - Transmit Timestamp: +528.988800168</span><br><span class="line">13:16:12.412254 IP (tos 0x0, ttl  57, id 0, offset 0, flags [DF], proto: UDP (17), length: 76) 58.216.105.122 &gt; 69.172.201.153.123: [udp sum ok] NTPv4, length 48</span><br><span class="line">    Server, Leap indicator:  (0), Stratum 2, poll 9s, precision -24</span><br><span class="line">    Root Delay: 0.000106, Root dispersion: 0.002014, Reference-ID: 10.137.38.86</span><br><span class="line">      Reference Timestamp:  3677375704.335250139 (2016/07/13 13:15:04)</span><br><span class="line">      Originator Timestamp: 3677375772.388326644 (2016/07/13 13:16:12)</span><br><span class="line">      Receive Timestamp:    3677375772.400358736 (2016/07/13 13:16:12)</span><br><span class="line">      Transmit Timestamp:   3677375772.400375515 (2016/07/13 13:16:12)</span><br><span class="line">        Originator - Receive Timestamp:  +0.012032079</span><br><span class="line">        Originator - Transmit Timestamp: +0.012048868</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>再次恢复虚拟机的<code>TCO</code></p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[root@houyiecsayZ14464544641Z ~]# ethtool -K eth1 tx on</span><br><span class="line">Actual changes:</span><br><span class="line">rx-checksumming: on</span><br><span class="line">tx-checksumming: on</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>可以看到抓包显示依然出现了UDP发送包的chksum错误</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">13:18:47.851459 IP (tos 0x0, ttl  64, id 48096, offset 0, flags [none], proto: UDP (17), length: 61) 69.172.201.153.51360 &gt; 8.8.8.8.53: [bad udp cksum 256e!]  14335+ A? www.sina.com.cn. (33)</span><br><span class="line">13:18:47.983450 IP (tos 0x0, ttl  42, id 47800, offset 0, flags [none], proto: UDP (17), length: 183) 8.8.8.8.53 &gt; 69.172.201.153.51360:  14335 q: A? www.sina.com.cn. 5/0/0 www.sina.com.cn. CNAME[|domain]</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p><strong>注意：为了避免性能问题，完成测试后需要恢复开启<code>TCO</code>功能</strong></p>
+<h2 id="原理简述"><a href="#原理简述" class="headerlink" title="原理简述"></a>原理简述</h2><p><a target="_blank" rel="noopener" href="https://huataihuang.gitbooks.io/cloud-atlas/content/network/packet_analysis/tcpdump/Too%20many%20incorrect%20checksum%20errors%20in%20TCPDUMP" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>Too many incorrect checksum errors in TCPDUMP</a>提供了明确的解释：</p>
+<blockquote>
+<p>这个<code>incorrect</code> checksum是一个称为TCP checksum offloading的功能，这个发出的TCP数据包的checksum字段在通过操作系统时是没有预先计算但被设置成<code>0</code>，然后留给通过NIC网卡处理器的时候进行校验计算。</p>
+</blockquote>
+<p>在<a target="_blank" rel="noopener" href="http://www.wireshark.org/faq.html#q10.1" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>Wireshark FAQ</a>提供了对数据包分析工具角度说明：</p>
+<blockquote>
+<p>如果发送给运行Wireshrk服务器的数据包显示有TCP checksum错误，可能是因为使用的网卡配置了TCP checksum offloading功能。这意味着TCP checksum功能通过网卡添加到了数据包中，而不是通过操作系统的TCP/IP堆栈来添加。当在网卡接口上进行数据包捕捉时，通过主机发送的数据包是直接由操作系统在数据包捕捉接口上处理的，意味着此时数据包还没有添加一个TCP checksum。</p>
+<p>解决的唯一方法是禁止TCP checksum offloading，但是在一些操作系统不允许这么操作，并且会导致明显的网络性能下降。然而，可以关闭Wireshark的TCP checksum error报告功能，这样它就不会在数据包有错误TCP checksum时拒绝执行TCP重组。设置方法是在WireShark的<code>Perferences</code>中，在<code>Protocols</code>列表中选择<code>TCP</code> ，然后关闭<code>Check the validity of the TCP checksum when possible</code>。也可以在命令行使用参数<code>-o tcp.check_checksum:false</code></p>
+</blockquote>
+<h2 id="原理详解"><a href="#原理详解" class="headerlink" title="原理详解"></a>原理详解</h2><p>大多数现代操作系统都支持网络卸载（network offloading）功能，即部分网络处理由网卡完成而不是由CPU处理。这样可以释放系统资源以便能够处理更多的连接。不过对于数据包捕捉分析会带来一些较为奇怪的结果或者丢失一些流量。</p>
+<p><strong><code>Checksum Offloading</code></strong></p>
+<p>在支持checksum offloading的系统中，IP,TCP和UDP checksum可以在传输到网线之前由网卡NIC来完成。此时在Wirshark中会提示数据包错误<code>[incorrect, should be xxxx (maybe caused by "TCP checksum offload"?)].</code>（tcpdump也有同样提示<code>cksum xxxx incorrect</code>）。抓包工具Wireshark/Tcpdump是在数据包被发送给网卡之前捕捉数据包的，此时它不会看到正确的checksum，因为此时尚未进行计算（因为checksum已经卸载到网卡，此时这个checksum字段会被填写为0）。这也就导致了抓包工具提示checksum错误的原因。</p>
+<p>要通过抓包工具来观察数据包是否真的存在checksum错误，可以暂时关闭网卡的<code>checksum offload</code>功能，验证完成后再恢复网卡的<code>checksum offload</code>（关闭TCO会有性能问题）</p>
+<p><strong><code>Segmentation Offloading</code></strong></p>
+<p>以下图示显示了TCP/IP堆栈没有卸载的时候数据包，假设应用数据包(Application data)是7300字节，此时TCP将把应用数据包切分成5个分片（segments），这是因为以太网的最大传输单元（Maximum Transmission Unit, MTU）是<code>1500字节</code>，此外我们还要减去<code>20字节的IP头部</code>以及<code>20字节的TCP头部</code>，实际能够用于数据传输的TCP分片只有<code>1460字节</code>(也就是TCP最大分片大小，TCP Maximum Segment Size, MSS)。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/wireshark-capture-1.png" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="535" height="230" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[87.9909,2.961,29.0784,0.2213]}" data-stellar-image-source="https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/wireshark-capture-1.png"></p>
+<p>当使用了网卡提供的<code>segmentation offloading</code>功能，操作系统就不会对应用数据（application data）进行分片，而是直接将一个大的TCP/IP包发送给驱动程序。此时TCP和IP头部实际上是一个临时头部。驱动程序会创建一个单一的巨大的以太网帧，此时这个巨大的以太网帧会被包捕捉工具（如Wireshark）捕捉到，然后再发送给物理网卡。最后，网卡才执行提以太网帧分片，此时网卡会把使用这个临时头部来创建真实的TCP/IP以太网头部并生成5个以太网帧，最后这5个以太网帧才发送到网络中。</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/wireshark-capture-2.png" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="535" height="239" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[227.1546,6.341,26.0392,0.2032]}" data-stellar-image-source="https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/wireshark-capture-2.png"></p>
+<p>上述过程，如果启用了<code>segmentation offloading</code>，则抓包工具wireshark只能捕捉到一个巨大的以太网帧（包含7300字节数据）</p>
+<ul>
+<li>Linux操作系统</li>
+</ul>
+<p>检查<code>checksum offload</code></p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ethtool --show-offload ethX</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>关闭<code>checksum offload</code></p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ethtool --offload ethX rx off tx off</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>或者使用命令</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ethtool -K ethX rx off tx off</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>在<a target="_blank" rel="noopener" href="http://blog.securityonion.net/2011/10/when-is-full-packet-capture-not-full.html" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>When is full packet capture NOT full packet capture?</a>中整理提供了非常好的说明</p>
+<div class="md-table-scroll"><table>
+<thead>
+<tr>
+<th>NIC offload功能列表</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tso</code></td>
+<td><a target="_blank" rel="noopener" href="http://en.wikipedia.org/wiki/Large_segment_offload" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>tcp-segmentation-offload</a> TCP分片卸载</td>
+</tr>
+<tr>
+<td><code>gso</code></td>
+<td><a target="_blank" rel="noopener" href="http://lwn.net/Articles/188489/" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>genteric-segmentation-offload</a> 通用分片卸载</td>
+</tr>
+<tr>
+<td><code>gro</code></td>
+<td><a target="_blank" rel="noopener" href="http://lwn.net/Articles/358910/" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>generic-receive-offload</a> 通用接收卸载</td>
+</tr>
+</tbody></table></div>
+<p>例如使用<code>ethtool -k eth0</code>可能可以看到如下输出</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Offload parameters for eth0:</span><br><span class="line">rx-checksumming: on</span><br><span class="line">tx-checksumming: on</span><br><span class="line">scatter-gather: on</span><br><span class="line">tcp-segmentation-offload: on</span><br><span class="line">udp-fragmentation-offload: off</span><br><span class="line">generic-segmentation-offload: on</span><br><span class="line">generic-receive-offload: on</span><br><span class="line">large-receive-offload: off</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>关闭<code>offload</code>设置的方法案例</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ethtool -K eth0 rx off</span><br><span class="line">ethtool -K eth0 tx off</span><br><span class="line">ethtool -K eth0 sg off</span><br><span class="line">ethtool -K eth0 tso off</span><br><span class="line">ethtool -K eth0 ufo off</span><br><span class="line">ethtool -K eth0 gso off</span><br><span class="line">ethtool -K eth0 gro off</span><br><span class="line">ethtool -K eth0 lro off</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<blockquote>
+<p>注意，上述设置是<code>flying</code>的，不是持久化设置。要持久化设置，需要修改网卡配置，例如RedHat操作系统的<code>/etc/sysconfig/network-scripts/ifcfg-eth0</code>配置</p>
+<p>Broadcom 早期的<code>tg3</code>的驱动可能在启用<code>tso</code>的时候会导致数据包不正确 - <a target="_blank" rel="noopener" href="http://www.running-system.com/take-care-if-using-an-older-broadcom-tg3-driver-tso-enabled-at-your-esxi-host/" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>Take care if using an older Broadcom tg3 driver + TSO enabled at your ESXi host</a>，在生产环境中也遇到过<code>tg3</code>启用<code>tso</code>之后导致内存分配错误</p>
+</blockquote>
+<ul>
+<li>Windows操作系统</li>
+</ul>
+<p>在虚拟化环境中，Windows虚拟机启用TCP Offloading可能会存在一些问题，可以通过下面的方法来禁用Windows虚拟机TCP Offloading（物理服务器设置方法相同）</p>
+<p>在Windows操作系统的控制面板（<code>Control Pannel</code>）中选择**<code>Network Settings &gt; Change Adapter Settings</code><strong>，然后鼠标右击每个网卡，选择</strong><code>Networking</code><strong>菜单的</strong><code>Configure</code><strong>，然后点击</strong><code>Advanced</code>**面板，此时可以看到<code>TCP offload</code>相关设置（下图是Citrix adapter虚拟网卡）</p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/tcp_offloading_in_windows.png" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="410" height="459" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[200.613,34.6077,91.7048,1]}" data-stellar-image-source="https://huataihuang.gitbooks.io/cloud-atlas/content/img/network/packet_analysis/tcp_offloading_in_windows.png"></p>
+<p>关闭TCP offload相关的以下选项，然后点击**<code>ok</code>**</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">IPv4 Checksum Offload</span><br><span class="line">Large Receive Offload</span><br><span class="line">Large Send Offload</span><br><span class="line">TCP Checksum Offload</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<ul>
+<li>Windows操作系统<code>Chimney Offload</code>操作方法</li>
+</ul>
+<p>在Windows操作系统中检查tcp设置</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">netsh int tcp show global</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>关闭<code>chimney offload</code></p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">netsh int tcp set global chimney=disabled</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>开启<code>chimney offload</code></p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">netsh int tcp set global chimney=enabled</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p><strong><code>Chimney offloading</code>是一种通过网卡NIC卸载处理TCP连接的技术</strong>，在启用了<code>chimney offloading</code>的Windows操作系统，可以通过命令</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">netstat -t</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>观察到如下输出</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">Active Connections</span><br><span class="line"></span><br><span class="line">  Proto  Local Address          Foreign Address        State           Offload State</span><br><span class="line"></span><br><span class="line">  TCP    127.0.0.1:52613        computer_name:52614       ESTABLISHED     InHost</span><br><span class="line">  TCP    192.168.1.103:52614        computer_name:52613       ESTABLISHED     Offloaded</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+
+<p>其中，第二行标记了<code>Offloaded</code>就是表示这个连接已经被网卡的Chimney offloading卸载了，这样系统可以承受更多的TCP连接。</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://sokratisg.net/2012/04/01/udp-tcp-checksum-errors-from-tcpdump-nic-hardware-offloading/" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>UDP / TCP Checksum errors from tcpdump &amp; NIC Hardware Offloading</a></li>
+<li><a target="_blank" rel="noopener" href="http://sandilands.info/sgordon/segmentation-offloading-with-wireshark-and-ethtool" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>Segmentation and Checksum Offloading: Turning Off with ethtool</a></li>
+<li><a target="_blank" rel="noopener" href="https://wiki.wireshark.org/CaptureSetup/Offloading" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>WireShark: CaptureSetup/Offloading</a></li>
+<li><a target="_blank" rel="noopener" href="http://blog.securityonion.net/2011/10/when-is-full-packet-capture-not-full.html" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>When is full packet capture NOT full packet capture?</a></li>
+<li><a target="_blank" rel="noopener" href="https://support.rackspace.com/how-to/disabling-tcp-offloading-in-windows-server-2012/" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>Disable TCP Offloading in Windows Server 2012</a></li>
+<li><a target="_blank" rel="noopener" href="https://support.microsoft.com/en-us/kb/951037" data-md-link=""><span class="md-link-icon ui-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><g opacity=".5"><path d="M19.7388 4.26118C17.0572 1.57961 12.7095 1.57961 10.0279 4.26118L9.30707 4.98203C9.01418 5.27492 9.01418 5.7498 9.30707 6.04269C9.59997 6.33558 10.0748 6.33558 10.3677 6.04269L11.0886 5.32184C13.1844 3.22605 16.5823 3.22605 18.6781 5.32184C20.7739 7.41763 20.7739 10.8156 18.6781 12.9114L17.9573 13.6322C17.6644 13.9251 17.6644 14.4 17.9573 14.6929C18.2502 14.9858 18.725 14.9858 19.0179 14.6929L19.7388 13.972C22.4203 11.2905 22.4203 6.94276 19.7388 4.26118Z"></path><path d="M6.04269 9.30707C6.33558 9.59997 6.33558 10.0748 6.04269 10.3677L5.32184 11.0886C3.22605 13.1844 3.22605 16.5823 5.32184 18.6781C7.41763 20.7739 10.8156 20.7739 12.9114 18.6781L13.6322 17.9573C13.9251 17.6644 14.4 17.6644 14.6929 17.9573C14.9858 18.2501 14.9858 18.725 14.6929 19.0179L13.972 19.7388C11.2905 22.4203 6.94276 22.4203 4.26118 19.7388C1.57961 17.0572 1.57961 12.7095 4.26118 10.0279L4.98203 9.30707C5.27492 9.01418 5.7498 9.01418 6.04269 9.30707Z"></path></g><path d="M14.6933 9.30707C14.9862 9.59997 14.9862 10.0748 14.6933 10.3677L10.3682 14.6928C10.0753 14.9857 9.60045 14.9857 9.30756 14.6928C9.01467 14.3999 9.01467 13.9251 9.30756 13.6322L13.6327 9.30707C13.9255 9.01418 14.4004 9.01418 14.6933 9.30707Z"></path></g></svg></span>Information about the TCP Chimney Offload, Receive Side Scaling, and Network Direct Memory Access features in Windows Server 2008</a> 微软官方文档，提供了TCP Chimney Offload（也就是TCP连接的卸载功能）以及接收滑动窗口，网络直接内存访问的相关设置，对于Windows Server 2008操作系统的参考非常详尽</li>
+</ul>
+</article>
+
+
+
+  <div class="article-share slide-up" id="share">
+    <div class="body">
+      <div class="social-wrap dis-select"><a class="social share-item qrcode ui-interactive is-icon-only" onclick="util.toggle(&quot;share-qrcode&quot;)" aria-label="分享文章: QR Code" title="分享文章: QR Code"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M10.553 13.447c-.424-.424-.95-.596-1.535-.675c-.553-.074-1.25-.074-2.086-.074H5.827c-.58 0-1.065 0-1.459.037c-.411.04-.795.124-1.146.34c-.345.21-.634.5-.845.844c-.216.352-.3.735-.34 1.147C2 15.459 2 15.944 2 16.525v.068c0 .884 0 1.597.055 2.17c.056.592.175 1.108.459 1.571c.288.47.682.864 1.152 1.152c.463.284.979.403 1.57.46C5.81 22 6.524 22 7.407 22h.07c.58 0 1.064 0 1.458-.037c.412-.04.795-.124 1.147-.34c.344-.21.633-.5.844-.844c.216-.352.3-.736.34-1.147c.037-.394.037-.879.037-1.46v-1.104c0-.836 0-1.533-.074-2.086c-.079-.584-.251-1.111-.675-1.535m-1.62-11.41c.412.04.795.124 1.147.34c.344.21.633.5.844.845c.216.351.3.735.34 1.146c.037.394.037.879.037 1.46v1.104c0 .836 0 1.533-.074 2.086c-.079.584-.251 1.111-.675 1.535s-.95.596-1.535.675c-.553.074-1.25.074-2.086.074H5.827c-.58 0-1.065 0-1.459-.037c-.411-.04-.795-.124-1.146-.34a2.56 2.56 0 0 1-.845-.844c-.216-.352-.3-.735-.34-1.147C2 8.54 2 8.056 2 7.475v-.068c0-.884 0-1.597.055-2.17c.056-.592.175-1.108.459-1.571c.288-.47.682-.864 1.152-1.152c.463-.284.979-.403 1.57-.46C5.81 2 6.524 2 7.407 2h.07c.58 0 1.064 0 1.458.037M16.593 2h-.068c-.58 0-1.065 0-1.46.037c-.41.04-.794.124-1.146.34c-.344.21-.633.5-.844.845c-.216.351-.3.735-.34 1.146c-.037.394-.037.879-.037 1.46v1.104c0 .836 0 1.533.074 2.086c.079.584.251 1.111.675 1.535s.95.596 1.535.675c.553.074 1.25.074 2.086.074h1.105c.58 0 1.065 0 1.459-.037c.411-.04.795-.124 1.146-.34c.345-.21.634-.5.845-.844c.216-.352.3-.735.34-1.147C22 8.54 22 8.056 22 7.475v-.068c0-.884 0-1.597-.055-2.17c-.056-.592-.175-1.108-.459-1.571a3.5 3.5 0 0 0-1.152-1.152c-.463-.284-.979-.403-1.57-.46C18.19 2 17.477 2 16.594 2" opacity=".5"></path><path fill="currentColor" d="M14.093 21.302a.698.698 0 1 1-1.396 0v-2.79h1.396z" opacity=".4"></path><path fill="currentColor" d="M21.302 12.698a.7.7 0 0 0-.697.697v3.256H22v-3.256a.7.7 0 0 0-.698-.697" opacity=".5"></path><path fill="currentColor" d="M16.076 16.617c-.076.184-.076.417-.076.883s0 .699.076.883a1 1 0 0 0 .541.54c.184.077.417.077.883.077s.699 0 .883-.076a1 1 0 0 0 .54-.541c.077-.184.077-.417.077-.883s0-.699-.076-.883a1 1 0 0 0-.541-.54C18.199 16 17.966 16 17.5 16s-.699 0-.883.076a1 1 0 0 0-.54.541"></path><path fill="currentColor" d="M22 18.535v-.023h-1.396c0 .443 0 .74-.016.97c-.015.224-.043.333-.073.405a1.16 1.16 0 0 1-.629.63c-.072.029-.18.056-.405.072c-.23.015-.527.016-.97.016h-1.86V22h1.883c.414 0 .759 0 1.042-.02a2.6 2.6 0 0 0 .844-.175a2.56 2.56 0 0 0 1.384-1.384c.112-.27.156-.549.176-.844c.02-.283.02-.628.02-1.042" opacity=".7"></path><path fill="currentColor" d="M12.697 16.616v.035h1.396c0-.668 0-1.116.035-1.458c.034-.33.093-.482.16-.583a1.2 1.2 0 0 1 .321-.32c.101-.068.254-.128.584-.161c.342-.035.79-.036 1.458-.036h1.86v-1.395h-1.896c-.623 0-1.142 0-1.563.043c-.44.044-.85.142-1.218.388c-.28.187-.519.426-.706.706c-.246.368-.343.777-.388 1.217c-.043.421-.043.94-.043 1.564" opacity=".6"></path><path fill="currentColor" d="M5.508 18.69c.219.155.528.155 1.146.155c.619 0 .928 0 1.146-.155a.8.8 0 0 0 .2-.199c.154-.218.154-.527.154-1.146s0-.927-.155-1.146A.8.8 0 0 0 7.8 16c-.218-.155-.527-.155-1.146-.155s-.927 0-1.146.155a.8.8 0 0 0-.199.2c-.155.218-.155.527-.155 1.145c0 .619 0 .928.155 1.146a.8.8 0 0 0 .2.2M6.654 8.155c-.618 0-.927 0-1.146-.155a.8.8 0 0 1-.199-.2c-.155-.217-.155-.527-.155-1.145c0-.619 0-.928.155-1.146a.8.8 0 0 1 .2-.2c.218-.154.527-.154 1.145-.154c.619 0 .928 0 1.146.155a.8.8 0 0 1 .2.199c.154.218.154.527.154 1.146s0 .928-.155 1.146A.8.8 0 0 1 7.8 8c-.218.155-.527.155-1.146.155M16.2 8c.218.155.527.155 1.146.155s.927 0 1.146-.155a.8.8 0 0 0 .199-.199c.155-.218.155-.528.155-1.146c0-.619 0-.928-.155-1.146a.8.8 0 0 0-.2-.2c-.218-.154-.527-.154-1.145-.154c-.619 0-.928 0-1.146.155a.8.8 0 0 0-.2.199c-.154.218-.154.527-.154 1.146s0 .928.155 1.146A.8.8 0 0 0 16.2 8"></path></svg></span></a><a class="social share-item weibo ui-interactive is-icon-only" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fcodearea.cc%2Fpost%2FLINUX%2Ftcpdump%25E5%259C%25A8%25E5%2590%25AF%25E7%2594%25A8TCP%25E5%258D%25B8%25E8%25BD%25BD%25E5%258A%259F%25E8%2583%25BD%25E7%259A%2584%25E7%25BD%2591%25E5%258D%25A1%25E4%25B8%258A%25E6%258A%25A5%25E5%2591%258A%2520checksum%2520error%2520%25C2%25B7%2F&amp;title=tcpdump%E5%9C%A8%E5%90%AF%E7%94%A8TCP%E5%8D%B8%E8%BD%BD%E5%8A%9F%E8%83%BD%E7%9A%84%E7%BD%91%E5%8D%A1%E4%B8%8A%E6%8A%A5%E5%91%8A%22checksum%20error%22%20%C2%B7%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;summary=%E5%9C%A8%E4%BD%BF%E7%94%A8tcpdump%E5%AF%B9%E7%BD%91%E5%8D%A1%E8%BF%9B%E8%A1%8C%E6%8A%93%E5%8C%85%E7%9A%84%E6%97%B6%EF%BC%8C%E5%BE%88%E5%A4%9A%E6%97%B6%E5%80%99%E4%BC%9A%E5%8F%91%E7%8E%B0%E6%9C%89cksum%20incorrect%E9%94%99%E8%AF%AF%EF%BC%9A%0A12sudo%20tcpdump%20-i%20eth0%20-nn%20-vv%20-e%0A%0A%E8%BD%AC%E5%8C%85%E6%98%BE%E7%A4%BA%E6%9C%89%E5%BE%88%E5%A4%9Aincorrect%E6%95%B0%E6%8D%AE%E5%8C%85%0A123456711%3A54%3A08..." target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Weibo" title="分享文章: Weibo"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.737 5.439l-.002.004zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.18.601l.014-.028zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.57-.18-.405-.615.375-.977.42-1.804 0-2.404-.781-1.112-2.915-1.053-5.364-.03 0 0-.766.331-.571-.271.376-1.217.315-2.224-.27-2.809-1.338-1.337-4.869.045-7.888 3.08C1.309 10.87 0 13.273 0 15.348c0 3.981 5.099 6.395 10.086 6.395 6.536 0 10.888-3.801 10.888-6.82 0-1.822-1.547-2.854-2.915-3.284v.01zm1.908-5.092c-.766-.856-1.908-1.187-2.96-.962-.436.09-.706.511-.616.932.09.42.511.691.932.602.511-.105 1.067.044 1.442.465.376.421.466.977.316 1.473-.136.406.089.856.51.992.405.119.857-.105.992-.512.33-1.021.12-2.178-.646-3.035l.03.045zm2.418-2.195c-1.576-1.757-3.905-2.419-6.054-1.968-.496.104-.812.587-.706 1.081.104.496.586.813 1.082.707 1.532-.331 3.185.15 4.296 1.383 1.112 1.246 1.429 2.943.947 4.416-.165.48.106 1.007.586 1.157.479.165.991-.104 1.157-.586.675-2.088.241-4.478-1.338-6.235l.03.045z"></path></svg></span></a><a class="social share-item x ui-interactive is-icon-only" href="https://x.com/intent/tweet?text=tcpdump%E5%9C%A8%E5%90%AF%E7%94%A8TCP%E5%8D%B8%E8%BD%BD%E5%8A%9F%E8%83%BD%E7%9A%84%E7%BD%91%E5%8D%A1%E4%B8%8A%E6%8A%A5%E5%91%8A%22checksum%20error%22%20%C2%B7%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;url=https%3A%2F%2Fcodearea.cc%2Fpost%2FLINUX%2Ftcpdump%25E5%259C%25A8%25E5%2590%25AF%25E7%2594%25A8TCP%25E5%258D%25B8%25E8%25BD%25BD%25E5%258A%259F%25E8%2583%25BD%25E7%259A%2584%25E7%25BD%2591%25E5%258D%25A1%25E4%25B8%258A%25E6%258A%25A5%25E5%2591%258A%2520checksum%2520error%2520%25C2%25B7%2F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: X" title="分享文章: X"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M14.234 10.162L22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299l-.929-1.329L3.076 1.56h3.182l5.965 8.532l.929 1.329l7.754 11.09h-3.182z"></path></svg></span></a><a class="social share-item telegram ui-interactive is-icon-only" href="https://t.me/share/url?url=https%3A%2F%2Fcodearea.cc%2Fpost%2FLINUX%2Ftcpdump%25E5%259C%25A8%25E5%2590%25AF%25E7%2594%25A8TCP%25E5%258D%25B8%25E8%25BD%25BD%25E5%258A%259F%25E8%2583%25BD%25E7%259A%2584%25E7%25BD%2591%25E5%258D%25A1%25E4%25B8%258A%25E6%258A%25A5%25E5%2591%258A%2520checksum%2520error%2520%25C2%25B7%2F&amp;text=tcpdump%E5%9C%A8%E5%90%AF%E7%94%A8TCP%E5%8D%B8%E8%BD%BD%E5%8A%9F%E8%83%BD%E7%9A%84%E7%BD%91%E5%8D%A1%E4%B8%8A%E6%8A%A5%E5%91%8A%22checksum%20error%22%20%C2%B7%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Telegram" title="分享文章: Telegram"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"></path></svg></span></a><a class="social share-item email ui-interactive is-icon-only" href="mailto:?subject=tcpdump%E5%9C%A8%E5%90%AF%E7%94%A8TCP%E5%8D%B8%E8%BD%BD%E5%8A%9F%E8%83%BD%E7%9A%84%E7%BD%91%E5%8D%A1%E4%B8%8A%E6%8A%A5%E5%91%8A%22checksum%20error%22%20%C2%B7%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;body=https%3A%2F%2Fcodearea.cc%2Fpost%2FLINUX%2Ftcpdump%25E5%259C%25A8%25E5%2590%25AF%25E7%2594%25A8TCP%25E5%258D%25B8%25E8%25BD%25BD%25E5%258A%259F%25E8%2583%25BD%25E7%259A%2584%25E7%25BD%2591%25E5%258D%25A1%25E4%25B8%258A%25E6%258A%25A5%25E5%2591%258A%2520checksum%2520error%2520%25C2%25B7%2F" aria-label="分享文章: Email" title="分享文章: Email"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M3.172 5.172C2 6.343 2 8.229 2 12s0 5.657 1.172 6.828C4.343 20 6.229 20 10 20h4c3.771 0 5.657 0 6.828-1.172C22 17.657 22 15.771 22 12s0-5.657-1.172-6.828C19.657 4 17.771 4 14 4h-4C6.229 4 4.343 4 3.172 5.172m15.404 2.348a.75.75 0 0 1-.096 1.056l-2.196 1.83c-.887.739-1.605 1.338-2.24 1.746-.66.424-1.303.693-2.044.693s-1.384-.269-2.045-.693c-.634-.408-1.352-1.007-2.239-1.745L5.52 8.576a.75.75 0 1 1 .96-1.152l2.159 1.799c.933.777 1.58 1.315 2.128 1.667.529.34.888.455 1.233.455s.704-.115 1.233-.455c.547-.352 1.195-.89 2.128-1.667l2.159-1.8a.75.75 0 0 1 1.056.097" clip-rule="evenodd"></path></svg></span></a></div>
+      <div class="share-qrcode" id="share-qrcode" style="opacity:0;height:0"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&amp;data=https%3A%2F%2Fcodearea.cc%2Fpost%2FLINUX%2Ftcpdump%25E5%259C%25A8%25E5%2590%25AF%25E7%2594%25A8TCP%25E5%258D%25B8%25E8%25BD%25BD%25E5%258A%259F%25E8%2583%25BD%25E7%259A%2584%25E7%25BD%2591%25E5%258D%25A1%25E4%25B8%258A%25E6%258A%25A5%25E5%2591%258A%2520checksum%2520error%2520%25C2%25B7%2F" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></div>
+    </div>
+  </div>
+
+
+
+<div class="related-wrap slide-up" id="read-next"><section class="body"><div class="item" id="prev"><div class="note"><svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-left" aria-hidden="true"></svg> 较新文章</div><a href="/post/BIGDATA/Esper%E5%AD%A6%E4%B9%A0%E4%B9%8B%E4%B8%80%EF%BC%9AEsper%E4%BB%8B%E7%BB%8D/">Esper学习之一：Esper介绍</a></div><div class="item" id="next"><div class="note">较早文章 <svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-right" aria-hidden="true"></svg></div><a href="/post/MIDDLEWARE/MySql%20Lock%20wait%20timeout%20exceeded/">MySql Lock wait timeout exceeded</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer slide-up footnote"><hr><div class="text"><p>本站由 <a href="/">dandeliono</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0">Stellar 2.0.0</a> 主题创建。<br>文章多为学习与工作中的笔记和转载整理,版权归原作者所有。</p>
+</div></footer>
+</main>
+<aside data-stellar-runtime-region="" id="rightbar-region" class="site-region site-region--rightbar" data-region="rightbar" aria-label="Rightbar"><div class="site-region__surface ui-drawer-surface"><div class="site-region__viewport"><div class="widgets widget-stack widget-stack--rightbar widget-stack--rightbar"><div class="widget-instance widget-instance--toc" data-widget-id="rightbar:0:toc" data-presentation="rightbar">
+
+
+<widget class="widget-wrapper slide-up toc" id="data-toc" collapse="false">
+  
+    <div class="widget-header dis-select">
+      <span class="name">本文目录</span>
+      <button type="button" class="cap-action ui-interactive card-hover card-hover--spotlight" data-shell-action="toggle-toc" aria-label="Toggle table of contents" aria-pressed="false"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg></span></button>
+    </div>
+  
+  <div class="widget-body"><ol class="toc ui-collection-adapter"><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%8E%9F%E7%90%86%E7%AE%80%E8%BF%B0"><span class="toc-text">原理简述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%8E%9F%E7%90%86%E8%AF%A6%E8%A7%A3"><span class="toc-text">原理详解</span></a></li></ol></div>
+  <div class="widget-footer"><a class="top ui-interactive" onclick="util.scrollTop()"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M20.536 3.464C22 4.93 22 7.286 22 12s0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464" opacity=".5"></path><path fill="currentColor" d="M9.53 12.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 9.56z"></path><path fill="currentColor" d="M9.53 16.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 13.56z"></path></svg></span><span>回到顶部</span></a></div>
+</widget>
+
+
+</div></div></div></div></aside>
+</div><button type="button" class="site-scrim" data-shell-action="dismiss-drawer" aria-label="Close navigation" tabindex="-1"></button><div data-stellar-runtime-region="" class="site-dock" role="group" aria-label="Layout panels">
+  <button type="button" class="site-dock__button site-dock__button--rightbar ui-interactive" aria-label="Open rightbar" aria-controls="rightbar-region" aria-expanded="false" data-shell-action="toggle-rightbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+  </button>
+  <button type="button" class="site-dock__button site-dock__button--leftbar ui-interactive" aria-label="Open leftbar" aria-controls="leftbar-region" aria-expanded="false" data-shell-action="toggle-leftbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"></path><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"></path></g></svg>
+  </button>
+</div>
+
+<dialog data-stellar-runtime-region="" class="search-dialog" id="site-search-dialog" aria-labelledby="site-search-title">
+  <div class="search-dialog__panel search-wrapper" id="site-search-wrapper" searching="false">
+    <div class="search-dialog__header">
+      <div class="search-form" role="search">
+        <span class="search-button" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+        <input type="search" class="search-input" id="site-search-input" aria-labelledby="site-search-title" placeholder="搜索">
+      </div>
+      <button type="button" class="search-dialog__close" data-shell-action="close-search" aria-label="关闭搜索">×</button>
+    </div>
+    
+      <div class="search-dialog__scope" role="radiogroup" aria-labelledby="site-search-title" hidden="">
+        <label class="search-dialog__scope-option" data-search-scope-option="all">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="all">
+          <span>全站</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="blog" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="blog">
+          <span>博客</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="current" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="current">
+          <span data-search-scope-current-label=""></span>
+        </label>
+      </div>
+    
+    <h2 class="search-dialog__title" id="site-search-title">站内搜索</h2>
+    <div class="search-result" id="site-search-result"></div>
+    <div class="search-no-result">没有找到内容！</div>
+  </div>
+</dialog>
+</div><div class="site-scripts">
+<script data-stellar-script="core" src="/js/stellar-icons.js?v=b068c3800a3fa93b"></script>
+
+<script data-stellar-script="defines">
+  window.canonical = window.stellarClientData.canonical;
+  const ctx = window.stellarClientData.ctx;
+  window.canonical.param = {permalink: "https://codearea.cc/post/LINUX/tcpdump%E5%9C%A8%E5%90%AF%E7%94%A8TCP%E5%8D%B8%E8%BD%BD%E5%8A%9F%E8%83%BD%E7%9A%84%E7%BD%91%E5%8D%A1%E4%B8%8A%E6%8A%A5%E5%91%8A%20checksum%20error%20%C2%B7/", checklink: ctx.services.video.js};
+  ctx.date_suffix = {"just":"刚刚","min":"分钟前","hour":"小时前","day":"天前"};
+  if (ctx.search) Object.assign(ctx.search, {"more":"更多","no_more":"没有更多了"});
+  const def = window.stellarClientData.def;
+  window.ctx = ctx;
+  window.def = def;
+</script>
+
+
+<!-- core: 迁移期 DOM/资源兼容工具；Extension 注册与生命周期由 ESM runtime 所有 -->
+<script data-stellar-script="core" src="/js/utils.js?v=2.0.0"></script>
+<script data-stellar-script="core" src="/js/main.js?v=2.0.0" defer=""></script>
+<script data-stellar-script="core" defer="" src="/js/profile.js?v=2.0.0"></script>
+
+
+
+
+
+<script data-stellar-script="core" type="application/json" id="stellar-runtime-config">{"version":1,"root":"/","policy":{"cache":{"enabled":true,"defaultTtl":3600,"ttl":{"giscus":600,"waline":600,"artalk":600,"memos":600,"memos-user":86400,"sites":86400,"friends":86400,"friends_and_posts":86400,"siteinfo":86400},"maxEntries":200},"request":{"retries":2,"timeoutMs":5000,"idleTimeoutMs":3000,"maxCacheEntryBytes":204800},"features":{"codeCopyToastMs":2500},"providers":{"linkPrefetch":"flying_pages","lightbox":"fancybox","diagrams":"mermaid"}},"extensions":[{"id":"pin-slider","module":"/js/runtime/extensions/pin-slider.js","scope":"region","when":{"selector":".pin-slider"},"config":{}},{"id":"page-controls","module":"/js/runtime/extensions/page-controls.js","scope":"region","when":{"always":true},"config":{"highlight":"/js/search/highlight.js","tagtree":"/js/tagtree.js"}},{"id":"partial-navigation","module":"/js/runtime/extensions/partial-navigation.js","scope":"document","when":{"always":true},"config":{}},{"id":"color-scheme-switch","module":"/js/runtime/extensions/color-scheme-switch.js","scope":"document","when":{"always":true},"config":{"messages":{"light":"切换到浅色模式","dark":"切换到深色模式","auto":"切换到跟随系统配色"}}},{"id":"search","module":"/js/runtime/extensions/search.js","scope":"document","when":{"selector":".search-input"},"config":{"provider":"local","options":{"scope":"post","includeContent":true,"cacheTtlSeconds":86400},"assets":{"client":null,"provider":"/js/search/local-search.js","shortcut":"/js/search/shortcut.js"}}},{"id":"hero-parallax","module":"/js/runtime/extensions/hero-parallax.js","scope":"region","when":{"selector":".wiki-hero"},"config":{}},{"id":"hero-effect","module":"/js/runtime/extensions/hero-effect.js","scope":"region","when":{"selector":"canvas[data-hero-effect]"},"config":{}},{"id":"lazy-loading","module":"/js/runtime/extensions/lazy-loading.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"}},{"id":"deferred-icons","module":"/js/runtime/extensions/deferred-icons.js","scope":"region","when":{"selector":"svg.icon[data-icon]"},"config":{}},{"id":"dropdown","module":"/js/runtime/extensions/dropdown.js","scope":"region","when":{"selector":"details.dropdown"},"config":{}},{"id":"services","module":"/js/runtime/extensions/services.js","scope":"region","when":{"selector":"#artalk_container, #twikoo_container, #waline_container, .data-service, [class*='ds-'], a[cardlink], a[data-md-link][data-siteinfo-api], .site-card [data-siteinfo-api], .voice\u003eaudio, .video\u003evideo, .chat-file"},"config":{"marked":"https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js"}},{"id":"settings","module":"/js/runtime/extensions/settings.js","scope":"region","when":{"selector":".settings-page"},"config":{}},{"id":"link-prefetch","module":"/js/runtime/extensions/link-prefetch.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"}},{"id":"lightbox","module":"/js/runtime/extensions/lightbox.js","scope":"region","when":{"selector":"[data-fancybox]:not(.error), .with-fancybox, .ds-memos, .timenode p\u003eimg"},"config":{"enabled":true,"selector":".timenode p\u003eimg","assets":{"localCss":"/css/plugins/fancybox.css","js":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js","css":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"}}},{"id":"reveal","module":"/js/runtime/extensions/reveal.js","scope":"region","when":{"selector":".slide-up"},"config":{"enabled":true,"duration":800,"interval":200,"distance":8,"blur":4}},{"id":"code-copy","module":"/js/runtime/extensions/code-copy.js","scope":"region","when":{"selector":".code"},"config":{"assets":{"js":"/js/plugins/copycode.js"},"messages":{"label":"复制","copied":"复制成功","denied":"未获得剪贴板权限","unsupported":"当前浏览器不支持剪贴板或页面不是 HTTPS"}}},{"id":"adaptive-text","module":"/js/runtime/extensions/adaptive-text.js","scope":"region","when":{"selector":"[data-text-adaptive]"},"config":{"assets":{"colorJs":"/js/color.js","js":"/js/plugins/adaptive-text.js"}}},{"id":"swiper","module":"/js/runtime/extensions/swiper.js","scope":"region","when":{"selector":"#swiper-api"},"config":{"assets":{"localCss":"/css/plugins/swiper.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js","css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css"}}}]}</script>
+<script data-stellar-script="core" type="module" src="/js/runtime/index.js?v=2.0.0&amp;runtime=1"></script>
+
+
+<!-- inject -->
+
+
+<script data-stellar-script="core" defer="" src="/js/navigation-init.js?v=2.0.0"></script>
+</div>
+
+</body></html>
