@@ -1,0 +1,623 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+  
+  <meta charset="utf-8">
+  <meta name="hexo-theme" content="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0" theme-name="Stellar" theme-version="2.0.0">
+  <link rel="canonical" href="https://codearea.cc/post/JAVA/用手写一个请求合并/" data-stellar-page-meta="">
+  
+  <meta name="generator" content="Hexo 8.1.2">
+  <meta http-equiv="x-dns-prefetch-control" content="on">
+  
+  <meta name="renderer" content="webkit">
+  <meta name="force-rendering" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000">
+  <meta name="theme-color" content="#f9fafb">
+  <title data-stellar-page-meta="">用手写一个请求合并 - 个人笔记</title>
+  <script data-stellar-script="core">
+    (function () {
+      var key = 'stellar:v2:leftbar-state';
+      var fallback = "expanded";
+      try {
+        var value = localStorage.getItem(key);
+        document.documentElement.dataset.leftbarState = value === 'collapsed' || value === 'expanded' ? value : fallback;
+      } catch (error) {
+        document.documentElement.dataset.leftbarState = fallback;
+      }
+    })();
+  </script>
+
+  <meta name="description" content="推荐阅读：  一、服务器崩溃的思考老板说，他要做个现场营销活动，线上线下都要参与推广，这个活动参与人数可能很大哦··· 果然，由于不是我写的代码，所以那天服务器就崩了，崩的时候很安静，写代码的那个人一个人走的，走的时候很安详。当请求量到达百万级时候，为啥会崩溃呢？ 微服务中是通过接口去向服务提供者发起http请求或者rpc（tcp）请求去获取数据，事实上大量请求中，服务端能处理的请求数量有限，服务" data-stellar-page-meta="">
+<meta property="og:type" content="article" data-stellar-page-meta="">
+<meta property="og:title" content="用手写一个请求合并" data-stellar-page-meta="">
+<meta property="og:url" content="https://codearea.cc/post/JAVA/%E7%94%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6/" data-stellar-page-meta="">
+<meta property="og:site_name" content="个人笔记" data-stellar-page-meta="">
+<meta property="og:description" content="推荐阅读：  一、服务器崩溃的思考老板说，他要做个现场营销活动，线上线下都要参与推广，这个活动参与人数可能很大哦··· 果然，由于不是我写的代码，所以那天服务器就崩了，崩的时候很安静，写代码的那个人一个人走的，走的时候很安详。当请求量到达百万级时候，为啥会崩溃呢？ 微服务中是通过接口去向服务提供者发起http请求或者rpc（tcp）请求去获取数据，事实上大量请求中，服务端能处理的请求数量有限，服务" data-stellar-page-meta="">
+<meta property="og:locale" content="zh_CN" data-stellar-page-meta="">
+<meta property="og:image" content="https://pic3.zhimg.com/v2-fe8761a0aa32b55d66ba275d400288e2_b.jpg" data-stellar-page-meta="">
+<meta property="article:author" content="dandeliono" data-stellar-page-meta="">
+<meta property="article:published_time" content="2023-04-19T07:45:48.000Z" data-stellar-page-meta="">
+<meta property="article:modified_time" content="2023-04-19T07:45:48.000Z" data-stellar-page-meta="">
+<meta name="twitter:card" content="summary" data-stellar-page-meta="">
+<meta name="twitter:image" content="https://pic3.zhimg.com/v2-fe8761a0aa32b55d66ba275d400288e2_b.jpg" data-stellar-page-meta=""><meta name="twitter:title" content="用手写一个请求合并" data-stellar-page-meta="">
+  
+  
+  <meta name="keywords" content="Java,Linux,中间件,云原生,技术笔记" data-stellar-page-meta="">
+
+  <!-- feed -->
+  
+
+  <link rel="preload" href="/css/main.css?v=2.0.0" as="style">
+  <link rel="stylesheet" href="/css/main.css?v=2.0.0">
+  <style>:root{--text-loading:"正在加载";--text-loading-error:"加载失败，请稍后重试。"}</style>
+
+
+  
+
+  
+
+  <script type="application/ld+json" data-stellar-page-meta="">{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"dandeliono","sameAs":["https://github.com/dandeliono"]},"dateCreated":"2023-04-19T07:45:48+00:00","dateModified":"2023-04-19T07:45:48+00:00","datePublished":"2023-04-19T07:45:48+00:00","description":"推荐阅读： \n一、服务器崩溃的思考老板说，他要做个现场营销活动，线上线下都要参与推广，这个活动参与人数可能很大哦··· 果然，由于不是我写的代码，所以那天服务器就崩了，崩的时候很安静，写代码的那个人一个人走的，走的时候很安详。当请求量到达百万级时候，为啥会崩溃呢？\n微服务中是通过接口去向服务提供者发起http请求或者rpc（tcp）请求去获取数据，事实上大量请求中，服务端能处理的请求数量有限...","headline":"用手写一个请求合并","mainEntityOfPage":{"@type":"WebPage","@id":"https://codearea.cc/post/JAVA/%E7%94%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6/"},"publisher":{"@type":"Organization","name":"dandeliono","sameAs":["https://github.com/dandeliono"]},"url":"https://codearea.cc/post/JAVA/%E7%94%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6/","image":["https://pic3.zhimg.com/v2-fe8761a0aa32b55d66ba275d400288e2_b.jpg"],"thumbnailUrl":"https://pic3.zhimg.com/v2-fe8761a0aa32b55d66ba275d400288e2_b.jpg"}</script>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=G-WXLPP6W80J"></script>
+<script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-WXLPP6W80J');</script>
+<script async="" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8915554050347707" crossorigin="anonymous"></script>
+
+
+  <link rel="stylesheet" href="/css/stellar-icons.css?v=7c185ad1a9a79674">
+  <link rel="preload" as="script" href="/js/stellar-icons.js?v=b068c3800a3fa93b">
+  
+  
+</head>
+<body data-page-type="content" data-page-layout="post" data-article-style="tech"><div data-stellar-runtime-region="" id="site-cover" class="site-cover"></div><div class="site-shell" id="start" data-regions="leftbar rightbar"><div class="site-workspace">
+<aside data-stellar-runtime-region="" id="leftbar-region" class="site-region site-region--leftbar" data-region="leftbar" aria-label="Leftbar"><div class="site-region__surface ui-surface"><div class="site-region__decoration" aria-hidden="true"></div><div class="site-region__viewport"><header class="site-region__header site-region__zone site-region__zone--top">
+    <div class="widget-instance widget-instance--brand" data-widget-id="leftbar:fixed:brand" data-presentation="leftbar" data-leftbar-rail="">
+<header class="brand-header brand-header--regular brand-header--site"><div class="brand-wrap"><a class="brand-image brand-image--avatar" href="/"><img no-lazy="" src="https://avatars.githubusercontent.com/u/29496357" alt="" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></a><a class="brand-title" href="/"><div class="brand-name">个人笔记</div><div class="brand-tagline cap">永远相信美好的事情即将发生</div></a><div class="brand-stats data-service ds-ghinfo" data-api="https://api.github.com/users/dandeliono"><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=followers"><span class="brand-stat__value" type="text" id="followers"></span><span class="brand-stat__label">followers</span></a><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=following"><span class="brand-stat__value" type="text" id="following"></span><span class="brand-stat__label">following</span></a><a class="brand-stat ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://github.com/dandeliono?tab=repositories"><span class="brand-stat__value" type="text" id="public_repos"></span><span class="brand-stat__label">repos</span></a></div></div><div class="brand-search">
+
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<button class="ui-collection__item ui-interactive card-hover card-hover--spotlight search-trigger has-hover-surface" type="button" title="搜索" aria-label="搜索" data-shell-action="open-search" data-search-instance="leftbar-brand-search" data-search-domain="blog" data-search-domain-label="博客" data-search-domain-blog="true">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">搜索</span>
+      
+      
+    </span>
+  
+  <kbd class="search-shortcut" aria-hidden="true">⌘K</kbd>
+
+  
+</button>
+
+  
+</div>
+
+
+</div></header>
+</div>
+  </header>
+  <div class="site-region__body site-region__zone site-region__zone--body">
+    <div class="widget-instance widget-instance--menu" data-widget-id="leftbar:fixed:menu" data-presentation="leftbar" data-leftbar-rail="">
+
+
+<nav class="menu dis-select">
+<div class="ui-collection" data-layout="list" data-variant="nav" data-density="auto">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight is-active" href="/" title="近期发布" aria-current="page">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M5.879 2.879C5 3.757 5 5.172 5 8v8c0 2.828 0 4.243.879 5.121C6.757 22 8.172 22 11 22h2c2.828 0 4.243 0 5.121-.879C19 20.243 19 18.828 19 16V8c0-2.828 0-4.243-.879-5.121C17.243 2 15.828 2 13 2h-2c-2.828 0-4.243 0-5.121.879M8.25 17a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75M9 12.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zM8.25 9A.75.75 0 0 1 9 8.25h6a.75.75 0 0 1 0 1.5H9A.75.75 0 0 1 8.25 9" clip-rule="evenodd"></path><path fill="currentColor" d="M5.235 4.058C5 4.941 5 6.177 5 8v8c0 1.823 0 3.058.235 3.942L5 19.924c-.975-.096-1.631-.313-2.121-.803C2 18.243 2 16.828 2 14v-4c0-2.829 0-4.243.879-5.121c.49-.49 1.146-.707 2.121-.803zm13.53 15.884C19 19.058 19 17.822 19 16V8c0-1.823 0-3.059-.235-3.942l.235.018c.975.096 1.631.313 2.121.803C22 5.757 22 7.17 22 9.999v4c0 2.83 0 4.243-.879 5.122c-.49.49-1.146.707-2.121.803z" opacity=".5"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">近期发布</span>
+      
+      
+    </span>
+  
+  
+  <span class="ui-collection__indicator"></span>
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/categories/" title="分类">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M2 6.94975C2 6.06722 2 5.62595 2.06935 5.25839C2.37464 3.64031 3.64031 2.37464 5.25839 2.06935C5.62595 2 6.06722 2 6.94975 2C7.33642 2 7.52976 2 7.71557 2.01738C8.51665 2.09229 9.27652 2.40704 9.89594 2.92051C10.0396 3.03961 10.1763 3.17633 10.4497 3.44975L11 4C11.8158 4.81578 12.2237 5.22367 12.7121 5.49543C12.9804 5.64471 13.2651 5.7626 13.5604 5.84678C14.0979 6 14.6747 6 15.8284 6H16.2021C18.8345 6 20.1506 6 21.0062 6.76946C21.0849 6.84024 21.1598 6.91514 21.2305 6.99383C22 7.84935 22 9.16554 22 11.7979V14C22 17.7712 22 19.6569 20.8284 20.8284C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.8284C2 19.6569 2 17.7712 2 14V6.94975Z" opacity=".5"></path><path d="M20 6.23751C19.9992 5.94016 19.9949 5.76263 19.9746 5.60842C19.7974 4.26222 18.7381 3.2029 17.3919 3.02567C17.1969 3 16.9647 3 16.5003 3H9.98828C10.1042 3.10392 10.2347 3.23445 10.45 3.44975L11.0003 4C11.8161 4.81578 12.2239 5.22367 12.7124 5.49543C12.9807 5.64471 13.2653 5.7626 13.5606 5.84678C14.0982 6 14.675 6 15.8287 6H16.2024C17.9814 6 19.1593 6 20 6.23751Z"></path><path fill-rule="evenodd" d="M12.25 10C12.25 9.58579 12.5858 9.25 13 9.25H18C18.4142 9.25 18.75 9.58579 18.75 10C18.75 10.4142 18.4142 10.75 18 10.75H13C12.5858 10.75 12.25 10.4142 12.25 10Z" clip-rule="evenodd"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">分类</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/tags/" title="标签">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M10.7226 3.20068C10.8335 2.80158 10.5998 2.38817 10.2007 2.27731C9.80163 2.16645 9.38822 2.40011 9.27736 2.79921L7.76327 8.24995H4C3.58579 8.24995 3.25 8.58573 3.25 8.99995C3.25 9.41416 3.58579 9.74995 4 9.74995H7.3466L5.81882 15.2499H2C1.58579 15.2499 1.25 15.5857 1.25 15.9999C1.25 16.4142 1.58579 16.7499 2 16.7499H5.40216L4.27736 20.7992C4.1665 21.1983 4.40016 21.6117 4.79927 21.7226C5.19837 21.8334 5.61178 21.5998 5.72264 21.2007L6.95895 16.7499H14.4022L13.2774 20.7992C13.1665 21.1983 13.4002 21.6117 13.7993 21.7226C14.1984 21.8334 14.6118 21.5998 14.7226 21.2007L15.959 16.7499H20C20.4142 16.7499 20.75 16.4142 20.75 15.9999C20.75 15.5857 20.4142 15.2499 20 15.2499H16.3756L17.9034 9.74995H22C22.4142 9.74995 22.75 9.41416 22.75 8.99995C22.75 8.58573 22.4142 8.24995 22 8.24995H18.3201L19.7226 3.20068C19.8335 2.80158 19.5998 2.38817 19.2007 2.27731C18.8016 2.16645 18.3882 2.40011 18.2774 2.79921L16.7633 8.24995H9.32006L10.7226 3.20068ZM14.8188 15.2499L16.3466 9.74995H8.9034L7.37562 15.2499H14.8188Z" clip-rule="evenodd"></path></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">标签</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/archives/" title="归档">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M6.94028 2C7.35614 2 7.69326 2.32421 7.69326 2.72414V4.18487C8.36117 4.17241 9.10983 4.17241 9.95219 4.17241H13.9681C14.8104 4.17241 15.5591 4.17241 16.227 4.18487V2.72414C16.227 2.32421 16.5641 2 16.98 2C17.3958 2 17.733 2.32421 17.733 2.72414V4.24894C19.178 4.36022 20.1267 4.63333 20.8236 5.30359C21.5206 5.97385 21.8046 6.88616 21.9203 8.27586L22 9H2.92456H2V8.27586C2.11571 6.88616 2.3997 5.97385 3.09665 5.30359C3.79361 4.63333 4.74226 4.36022 6.1873 4.24894V2.72414C6.1873 2.32421 6.52442 2 6.94028 2Z"></path><path d="M21.9995 14.0001V12.0001C21.9995 11.161 21.9963 9.66527 21.9834 9H2.00917C1.99626 9.66527 1.99953 11.161 1.99953 12.0001V14.0001C1.99953 17.7713 1.99953 19.6569 3.1711 20.8285C4.34267 22.0001 6.22829 22.0001 9.99953 22.0001H13.9995C17.7708 22.0001 19.6564 22.0001 20.828 20.8285C21.9995 19.6569 21.9995 17.7713 21.9995 14.0001Z" opacity=".5"></path><path d="M18 17C18 17.5523 17.5523 18 17 18C16.4477 18 16 17.5523 16 17C16 16.4477 16.4477 16 17 16C17.5523 16 18 16.4477 18 17Z"></path><path d="M18 13C18 13.5523 17.5523 14 17 14C16.4477 14 16 13.5523 16 13C16 12.4477 16.4477 12 17 12C17.5523 12 18 12.4477 18 13Z"></path><path d="M13 17C13 17.5523 12.5523 18 12 18C11.4477 18 11 17.5523 11 17C11 16.4477 11.4477 16 12 16C12.5523 16 13 16.4477 13 17Z"></path><path d="M13 13C13 13.5523 12.5523 14 12 14C11.4477 14 11 13.5523 11 13C11 12.4477 11.4477 12 12 12C12.5523 12 13 12.4477 13 13Z"></path><path d="M8 17C8 17.5523 7.55228 18 7 18C6.44772 18 6 17.5523 6 17C6 16.4477 6.44772 16 7 16C7.55228 16 8 16.4477 8 17Z"></path><path d="M8 13C8 13.5523 7.55228 14 7 14C6.44772 14 6 13.5523 6 13C6 12.4477 6.44772 12 7 12C7.55228 12 8 12.4477 8 13Z"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">归档</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" target="_blank" rel="noopener" href="https://tools.codearea.cc" title="工具">
+  
+  <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><g fill="currentColor"><path d="M14.0516 2C15.7318 1.99999 17.0627 1.99997 18.1043 2.14245C19.1762 2.28908 20.0438 2.59803 20.728 3.29418C21.4122 3.99033 21.7159 4.87308 21.86 5.9637C22 7.02342 22 8.37752 22 10.087V10.0871V13.913V13.913C22 15.6225 22 16.9766 21.86 18.0363C21.7159 19.1269 21.4122 20.0097 20.728 20.7058C20.0438 21.402 19.1762 21.7109 18.1043 21.8575C17.0627 22 15.7318 22 14.0517 22H14.0516H13.9484H13.9483C12.2681 22 10.9373 22 9.89575 21.8575C8.82382 21.7109 7.95621 21.402 7.27199 20.7058C6.58778 20.0097 6.28413 19.1269 6.14001 18.0363C5.99998 16.9766 5.99999 15.6225 6 13.913V13.9129V10.087V10.087C5.99999 8.3775 5.99998 7.02343 6.14001 5.9637C6.28413 4.87308 6.58778 3.99033 7.27199 3.29418C7.95621 2.59803 8.82382 2.28908 9.89575 2.14245C10.9373 1.99997 12.2682 1.99999 13.9484 2H13.9484H14.0516H14.0516Z" opacity=".5"></path><path d="M12 18.25C11.5858 18.25 11.25 18.5858 11.25 19C11.25 19.4142 11.5858 19.75 12 19.75H17C17.4142 19.75 17.75 19.4142 17.75 19C17.75 18.5858 17.4142 18.25 17 18.25H12Z"></path><path d="M2 14.5C2 13.0955 2 12.3933 2.33706 11.8889C2.48298 11.6705 2.67048 11.483 2.88886 11.3371C3.39331 11 4.09554 11 5.5 11C6.90446 11 7.60669 11 8.11114 11.3371C8.32952 11.483 8.51702 11.6705 8.66294 11.8889C9 12.3933 9 13.0955 9 14.5V18.5C9 19.9045 9 20.6067 8.66294 21.1111C8.51702 21.3295 8.32952 21.517 8.11114 21.6629C7.60669 22 6.90446 22 5.5 22C4.09554 22 3.39331 22 2.88886 21.6629C2.67048 21.517 2.48298 21.3295 2.33706 21.1111C2 20.6067 2 19.9045 2 18.5V14.5Z"></path></g></svg></span>
+  
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">工具</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div>
+
+</nav>
+
+</div>
+    <div class="widgets widget-stack widget-stack--leftbar widget-stack--body"><div class="widget-instance widget-instance--recent" data-widget-id="leftbar:1:recent" data-presentation="leftbar">
+
+<widget class="widget-wrapper slide-up recent-widget">
+  
+    <div class="widget-header dis-select">
+      <span class="name">最近更新</span>
+      
+    </div>
+  
+  <div class="widget-body"><div class="ui-collection" data-layout="list" data-variant="nav" data-density="compact">
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/OpenJDK%2021%20%E5%8D%87%E7%BA%A7%E6%8C%87%E5%8D%97/" title="OpenJDK 21 升级指南">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">O</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">OpenJDK 21 升级指南</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/%E4%BD%BF%E7%94%A8%20OpenRewrite%20%E4%BC%98%E5%8C%96%E4%BB%A3%E7%A0%81/" title="使用 OpenRewrite 优化代码">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">使</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">使用 OpenRewrite 优化代码</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/Maven%20%E7%A7%81%E6%9C%8D%20Nexus%20%E5%8D%87%E7%BA%A7%E5%AE%9E%E5%BD%95/" title="Maven 私服 Nexus 升级实录">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">M</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Maven 私服 Nexus 升级实录</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/%E5%AE%9A%E5%88%B6Ubuntu%E5%AE%89%E8%A3%85%E9%95%9C%E5%83%8F%E7%9A%84%E4%B8%A4%E7%A7%8D%E6%96%B9%E6%B3%95/" title="定制Ubuntu安装镜像的两种方法">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">定</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">定制Ubuntu安装镜像的两种方法</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/%E5%B8%B8%E8%A7%81%E7%9A%84bpftrace%E8%84%9A%E6%9C%AC/" title="常见的bpftrace脚本">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">常</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">常见的bpftrace脚本</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20etc%20shadow%20%E6%96%87%E4%BB%B6%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" title="Linux /etc/shadow 文件学习笔记">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux /etc/shadow 文件学习笔记</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20%E4%B8%8B%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4%E4%B8%8E%E6%8A%80%E5%B7%A7%E6%B1%87%E6%80%BB/" title="Linux 下常用命令与技巧汇总">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux 下常用命令与技巧汇总</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/ATOP%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E6%80%BB%E7%BB%93/" title="ATOP工作原理总结">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">A</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">ATOP工作原理总结</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/LINUX/Linux%20%E6%89%A9%E5%AE%B9%20%E6%A0%B9%E5%88%86%E5%8C%BA(LVM+%E9%9D%9ELVM)/" title="Linux 扩容 / 根分区(LVM+非LVM)">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">L</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">Linux 扩容 / 根分区(LVM+非LVM)</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+    
+<a class="ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/post/ALG/%E5%BB%B6%E8%BF%9F%E5%8F%8C%E5%88%A0%E5%A6%82%E6%AD%A4%E5%A5%BD%E7%94%A8%EF%BC%8C%E4%B8%BA%E4%BD%95%E5%A4%A7%E5%8E%82%E4%BB%8E%E6%9D%A5%E4%B8%8D%E7%94%A8Cache-aside%E4%B8%8B%E6%95%B0%E6%8D%AE%E5%8F%98%E6%9B%B4%E6%8E%A8%E8%8D%90%E4%BD%BF%E7%94%A8%E5%88%A0%E9%99%A4%E7%BC%93%E5%AD%98%E7%9A%84%E7%AD%96%E7%95%A5%EF%BC%8C%E4%B8%BA%E9%99%8D%E4%BD%8E%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%80%E8%87%B4%E9%80%9A%E5%B8%B8%E4%BC%9A%E9%85%8D%E5%90%88%E5%BB%B6%E8%BF%9F/" title="延迟双删如此好用，为何大厂从来不用Cache-aside下数据变更推荐使用删除缓存的策略，为降低数据不一致通常会配合延迟">
+  
+  
+  <span class="ui-collection__initial" aria-hidden="true">延</span>
+  
+    <span class="ui-collection__content">
+      
+      <span class="ui-collection__title">延迟双删如此好用，为何大厂从来不用Cache-aside下数据变更推荐使用删除缓存的策略，为降低数据不一致通常会配合延迟</span>
+      
+      
+    </span>
+  
+  
+  
+</a>
+
+  
+</div></div>
+  
+</widget>
+
+
+</div></div>
+  </div>
+  <footer class="site-region__footer">
+    <div class="site-region__footer-actions"><div class="widget-instance widget-instance--actions" data-widget-id="leftbar:fixed:actions" data-presentation="leftbar">
+<div class="region-actions social-wrap ui-collection" data-layout="inline" data-variant="nav" data-density="compact"><a class="social ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" href="https://github.com/dandeliono" target="_blank" rel="external nofollow noopener noreferrer"><span class="ui-icon"><svg class="icon" viewBox="0 0 1 1" data-icon="default:github" aria-hidden="true"></svg></span></a></div>
+</div></div>
+    <div class="site-region__system ui-collection" data-layout="inline" data-variant="nav" data-density="compact">
+      <div class="site-region__settings"><div class="widget-instance widget-instance--settings" data-widget-id="leftbar:fixed:settings" data-presentation="leftbar" data-leftbar-rail="">
+<a class="settings-widget ui-collection__item ui-interactive card-hover card-hover--spotlight" href="/settings/" data-profile-provider="" data-profile-identity-enabled="false" data-profile-fallback-avatar="https://gcore.jsdelivr.net/gh/cdn-x/placeholder@1.0.12/avatar/round/3442075.svg" data-settings-placement="leftbar" data-settings-label="设置" aria-label="设置" title="设置">
+  <span class="settings-widget__avatar" aria-hidden="true">
+    <span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><g fill="currentColor"><path fill-rule="evenodd" d="M12.4277 2C11.3139 2 10.2995 2.6007 8.27081 3.80211L7.58466 4.20846C5.55594 5.40987 4.54158 6.01057 3.98466 7C3.42773 7.98943 3.42773 9.19084 3.42773 11.5937V12.4063C3.42773 14.8092 3.42773 16.0106 3.98466 17C4.54158 17.9894 5.55594 18.5901 7.58466 19.7915L8.27081 20.1979C10.2995 21.3993 11.3139 22 12.4277 22C13.5416 22 14.5559 21.3993 16.5847 20.1979L17.2708 19.7915C19.2995 18.5901 20.3139 17.9894 20.8708 17C21.4277 16.0106 21.4277 14.8092 21.4277 12.4063V11.5937C21.4277 9.19084 21.4277 7.98943 20.8708 7C20.3139 6.01057 19.2995 5.40987 17.2708 4.20846L16.5847 3.80211C14.5559 2.6007 13.5416 2 12.4277 2Z" clip-rule="evenodd" opacity=".5"></path><path d="M12.4277 8.25C10.3567 8.25 8.67773 9.92893 8.67773 12C8.67773 14.0711 10.3567 15.75 12.4277 15.75C14.4988 15.75 16.1777 14.0711 16.1777 12C16.1777 9.92893 14.4988 8.25 12.4277 8.25Z"></path></g></svg></span>
+  </span>
+  <span class="settings-widget__name ui-collection__title">设置</span>
+</a>
+</div></div>
+      <button type="button" class="leftbar-state-toggle ui-collection__item ui-interactive card-hover card-hover--spotlight is-icon-only" aria-label="Collapse leftbar" aria-expanded="true" data-shell-action="toggle-leftbar"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M3.172 4.172C2 5.343 2 7.229 2 11v2c0 3.771 0 5.657 1.172 6.828S6.229 21 10 21h5V3h-5C6.229 3 4.343 3 3.172 4.172" clip-rule="evenodd" opacity=".5"></path><path fill="currentColor" d="M5.5 9.25a.75.75 0 0 0 0 1.5h6a.75.75 0 0 0 0-1.5zm1 4a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5zM22 13v-2c0-3.771 0-5.657-1.172-6.828c-.974-.975-3.192-1.139-5.828-1.166v17.988c2.636-.027 4.854-.191 5.828-1.166C22 18.657 22 16.771 22 13"></path></svg></span></button>
+    </div>
+  </footer></div></div></aside>
+<main data-stellar-runtime-region="" class="site-main" id="main">
+
+
+<div class="article-banner-wrap slide-up"><div class="article banner top">
+  <div class="content">
+    
+    <div class="top bread-nav footnote"><div class="top-row"><div class="left" id="breadcrumb"><a class="cap breadcrumb" href="/">主页</a>
+<span class="sep"></span><a class="cap breadcrumb" href="/">文章</a><span class="sep"></span><a class="cap breadcrumb-link" href="/categories/Java/">Java</a>
+</div><div class="right"><span class="cap reading">3163 字 · 预计阅读 11 分钟</span></div></div><div class="meta-row">
+<div class="flex-row" id="post-meta"><span class="text created">发布于：<time datetime="2023-04-19T07:45:48.000Z">2023-04-19</time></span><span class="sep updated"></span><span class="text updated">更新于：<time datetime="2023-04-19T07:45:48.000Z">2023-04-19</time></span></div>
+</div></div>
+    
+    <div class="bottom only-title">
+      
+      <div class="text-area">
+        <h1 class="text title"><span>用手写一个请求合并</span></h1>
+        
+      </div>
+    </div>
+    
+  </div>
+  </div></div>
+<article class="md-text content slide-up"><p><strong>推荐阅读：</strong> </p>
+<h2 id="一、服务器崩溃的思考"><a href="#一、服务器崩溃的思考" class="headerlink" title="一、服务器崩溃的思考"></a><strong>一、服务器崩溃的思考</strong></h2><dl><dt>老板说，他要做个现场营销活动，线上线下都要参与推广，这个活动参与人数可能很大哦··· 果然，由于不是我写的代码，所以那天服务器就崩了，崩的时候很安静，写代码的那个人一个人走的，走的时候很安详。</dt><dd>当请求量到达百万级时候，为啥会崩溃呢？</dd></dl><p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://pic3.zhimg.com/v2-fe8761a0aa32b55d66ba275d400288e2_b.jpg" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="600" height="60" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[195.1902,36.9361,77.6445,1]}" data-stellar-image-source="https://pic3.zhimg.com/v2-fe8761a0aa32b55d66ba275d400288e2_b.jpg"></p>
+<p>微服务中是通过接口去向<strong>服务提供者</strong>发起<code>http</code>请求或者<code>rpc（tcp）</code>请求去获取数据，事实上大量请求中，服务端能处理的请求数量有限，服务中充斥着大量的线程，以及数据库等的连接也会被占用完，导致请求响应速度也越来越慢。<br>：</p>
+<ul>
+<li>响应速度和我们的数据层有关系吗？</li>
+<li>能不能去添加服务端服务器呢？</li>
+<li>如果能减少客户端向服务端的请求就好了？</li>
+<li>限流吗？当前场景能限流吗？</li>
+<li>每个线程去查询数据，每次都只查询某一个结果，是不是太浪费了？</li>
+<li>我们能不能想办法，提升我们系统的调用性能？</li>
+</ul>
+<h2 id="二、有人想看请求合并，今天她来了"><a href="#二、有人想看请求合并，今天她来了" class="headerlink" title="二、有人想看请求合并，今天她来了"></a><strong>二、有人想看请求合并，今天她来了</strong></h2><p>上面的一些思路可以用加缓存，加MQ的方式去解决。但是缓存有限，MQ是个队列，有限流的效果。那么，如何才能提高系统的调用能力，我们学习一下，请求合并，结果分发。  </p>
+<ul>
+<li>正常的请求都是一个请求一个线程，到后台触发相关的业务需求，去调用数据获取业务。</li>
+<li>当请求合并后，我们要将多个多个请求合并后统一去批量去调用。</li>
+</ul>
+<p>大概的设计思路便是如下图所示：</p>
+<p>1. <strong>常规请求</strong></p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://pic1.zhimg.com/v2-443942324c4131f8a36280f1c8555144_b.jpg" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="600" height="257" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[272.1536,45.5587,90.4727,1]}" data-stellar-image-source="https://pic1.zhimg.com/v2-443942324c4131f8a36280f1c8555144_b.jpg"></p>
+<p>2. <strong>请求合并</strong>  </p>
+<p><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://pic3.zhimg.com/v2-11bf044b4527d57b934481fafb356a52_b.jpg" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;" width="600" height="223" data-stellar-image-dimensions="true" data-stellar-image-color="{&quot;size&quot;:64,&quot;hsla&quot;:[302.4828,35.7602,86.0291,1]}" data-stellar-image-source="https://pic3.zhimg.com/v2-11bf044b4527d57b934481fafb356a52_b.jpg"></p>
+<p>3. <strong>说下我们的思路</strong></p>
+<ul>
+<li>解决请求调用多，比如调用商品数据，经过的服务多，调用链很长，所以查询数据库的次数也就非常多，数据库连接池很快就被用光，导致很多请求被阻塞，也导致应用整体线程数非常高。虽然通过增加数据库连接池大小可以缓解问题，并且可以通过压力测试，但这治标不治本。</li>
+<li>查询商品信息的时候，如果同一商品同一时刻有100个请求，那么其中的99次查询是多余的，可以把100个请求合并成一个真实的后台接口调用，只要控制好线程安全即可。我的想法是使用并发计数器来实现再配合本地缓存，计数器可直接用JDK提供的<code>AtomicInteger</code>，线程安全又提供原子操作。</li>
+<li>以获取商品信息为例，每个商品id对应一个计数器，计数器初始值默认是0，当一个请求过来后通过<code>incrementAndGet()</code>使计数器自增1并返回自增后的值。当该值等于1，表明该线程在这个时间点上是第一个到达的线程，然后就去调用真实的业务逻辑，在查询到结果后放入到本地缓存中。当该值大于1的时候，表明之前已有线程正在调用业务逻辑，则进入等待状态，并循环的查询本地缓存中是否已有数据可用。获取到结果后都调用<code>decrementAndGet()</code>使计数器减1，计数器被减到0的时候就回到了初始状态，并且当减到0（代表最后一个线程）时清除缓存。</li>
+<li>那还有在1000次请求中，请求的数据id不同，但是使用的服务接口相同，都是查询商品库的商品<code>id</code>从<code>1~1000</code>的数据，都是从表里面查询，<code>queryDataById(dataId)</code>,那我也可以合并这些请求，改为批量查询，然后将数据分发返回。思路就是设计每个请求携带一个请求<code>唯一的traceId</code>,有点像链路跟踪的感觉，简单点可以使用查询的id进行最为跟踪id，将请求放入一个队中，使用定时任务，比如每隔10ms去扫描队列，将这些业务合并请求统一去请求数据库层。</li>
+<li>此方案有个数据延迟的地方，就是每次循环时的等待状态的时间。因为一次包含多次查库的业务调用，耗时基本都在几十毫秒，甚至是上百毫秒，可以把该等待睡眠设置小一点，比如10毫秒。这样即不会浪费CPU时间，实时性也比较高，但然也可以通过主动唤醒等待线程的方式，这个操作起来就比较复杂些。在这其中还可以添加一些异常处理、超时控制、最大重试次数，最大并发数（超时最大并发数就快速失败）等。</li>
+</ul>
+<h2 id="三、开始演练"><a href="#三、开始演练" class="headerlink" title="三、开始演练"></a>三、开始演练</h2><ul>
+<li><strong>模拟一个远程调用接口</strong></li>
+</ul>
+<figure class="highlight text"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">import org.springframework.stereotype.Service;</span><br><span class="line"></span><br><span class="line">import java.util.*;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * 模拟远程调用ShopData接口</span><br><span class="line"> * @author Lijing</span><br><span class="line"> */</span><br><span class="line">@Service</span><br><span class="line">public class QueryServiceRemoteCall {</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 调用远程的商品信息查询接口</span><br><span class="line">     *</span><br><span class="line">     * @param code 商品编码</span><br><span class="line">     * @return 返回商品信息，map格式</span><br><span class="line">     */</span><br><span class="line">    public HashMap&lt;String, Object&gt; queryShopDataInfoByCode(String code) {</span><br><span class="line">        try {</span><br><span class="line">            Thread.sleep(50L);</span><br><span class="line">        } catch (InterruptedException e) {</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        }</span><br><span class="line">        HashMap&lt;String, Object&gt; hashMap = new HashMap&lt;&gt;();</span><br><span class="line">        hashMap.put("shopDataId", new Random().nextInt(999999999));</span><br><span class="line">        hashMap.put("code", code);</span><br><span class="line">        hashMap.put("name", "小玩具");</span><br><span class="line">        hashMap.put("isOk", "true");</span><br><span class="line">        hashMap.put("price","3000");</span><br><span class="line">        return hashMap;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 批量查询 - 调用远程的商品信息查询接口</span><br><span class="line">     *</span><br><span class="line">     * @param codes 多个商品编码</span><br><span class="line">     * @return 返回多个商品信息</span><br><span class="line">     */</span><br><span class="line">    public List&lt;Map&lt;String, Object&gt;&gt; queryShopDataInfoByCodeBatch(List&lt;String&gt; codes) {</span><br><span class="line">        List&lt;Map&lt;String, Object&gt;&gt; result = new ArrayList&lt;&gt;();</span><br><span class="line">        for (String code : codes) {</span><br><span class="line">            HashMap&lt;String, Object&gt; hashMap = new HashMap&lt;&gt;();</span><br><span class="line">            hashMap.put("shopDataId", new Random().nextInt(999999999));</span><br><span class="line">            hashMap.put("code", code);</span><br><span class="line">            hashMap.put("name", "棉花糖");</span><br><span class="line">            hashMap.put("isOk", "true");</span><br><span class="line">            hashMap.put("price","6000");</span><br><span class="line">            result.add(hashMap);</span><br><span class="line">        }</span><br><span class="line">        return result;</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<ul>
+<li>使用<strong>CountDownLatch</strong>模拟并发请求的公共测试类</li>
+</ul>
+<figure class="highlight text"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line">@RunWith(SpringRunner.class)</span><br><span class="line">@SpringBootTest(classes = MyBotApplication.class)</span><br><span class="line">public class MergerApplicationTests {</span><br><span class="line"></span><br><span class="line">    long timed = 0L;</span><br><span class="line"></span><br><span class="line">    @Before</span><br><span class="line">    public void start() {</span><br><span class="line">        System.out.println("开始测试");</span><br><span class="line">        timed = System.currentTimeMillis();</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    @After</span><br><span class="line">    public void end() {</span><br><span class="line">        System.out.println("结束测试,执行时长：" + (System.currentTimeMillis() - timed));</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    // 模拟的请求数量</span><br><span class="line">    private static final int THREAD_NUM = 1000;</span><br><span class="line"></span><br><span class="line">    // 倒计数器 juc包中常用工具类</span><br><span class="line">    private CountDownLatch countDownLatch = new CountDownLatch(THREAD_NUM);</span><br><span class="line"></span><br><span class="line">    @Autowired</span><br><span class="line">    private ShopDataService shopDataService;</span><br><span class="line"></span><br><span class="line">    @Test</span><br><span class="line">    public void simulateCall() throws IOException {</span><br><span class="line">        // 创建 并不是马上发起请求</span><br><span class="line">        for (int i = 0; i &lt; THREAD_NUM; i++) {</span><br><span class="line">            final String code = "code-" + (i + 1);</span><br><span class="line">            // 多线程模拟用户查询请求</span><br><span class="line">            Thread thread = new Thread(() -&gt; {</span><br><span class="line">                try {</span><br><span class="line">                    // 代码在这里等待，等待countDownLatch为0，代表所有线程都start，再运行后续的代码</span><br><span class="line">                    countDownLatch.await();</span><br><span class="line">                    // 模拟 http请求，实际上就是多线程调用这个方法</span><br><span class="line">                    Map&lt;String, Object&gt; result = shopDataService.queryData(code);</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + " 查询结束，结果是：" + result);</span><br><span class="line">                } catch (Exception e) {</span><br><span class="line">                    System.out.println(Thread.currentThread().getName() + " 线程执行出现异常:" + e.getMessage());</span><br><span class="line">                }</span><br><span class="line">            });</span><br><span class="line">            thread.setName("price-thread-" + code);</span><br><span class="line">            thread.start();</span><br><span class="line">            // 启动后，倒计时器倒计数 减一，代表又有一个线程就绪了</span><br><span class="line">            countDownLatch.countDown();</span><br><span class="line">        }</span><br><span class="line"></span><br><span class="line">        System.in.read();</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">}</span><br><span class="line">先来个普通调用演示</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * 商品数据服务类</span><br><span class="line"> * @author lijing</span><br><span class="line"> */</span><br><span class="line">@Service</span><br><span class="line">public class ShopDataService {</span><br><span class="line">    @Autowired</span><br><span class="line">    QueryServiceRemoteCall queryServiceRemoteCall;</span><br><span class="line"></span><br><span class="line">    // 1000 用户请求，1000个线程</span><br><span class="line">    public Map&lt;String, Object&gt; queryData(String shopDataId) throws ExecutionException, InterruptedException {</span><br><span class="line">         return queryServiceRemoteCall.queryShopDataInfoByCode(shopDataId);</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line">查询结果展示</span><br><span class="line">开始测试</span><br><span class="line">price-thread-code-3 查询结束，结果是：{code=code-3, shopDataId=165800794, price=3000, isOk=true, name=小玩具}</span><br><span class="line">price-thread-code-994 查询结束，结果是：{code=code-994, shopDataId=735455508, price=3000, isOk=true, name=小玩具}</span><br><span class="line">price-thread-code-36 查询结束，结果是：{code=code-36, shopDataId=781610507, price=3000, isOk=true, name=小玩具}</span><br><span class="line">price-thread-code-993 查询结束，结果是：{code=code-993, shopDataId=231087525, price=3000, isOk=true, name=小玩具}</span><br><span class="line"></span><br><span class="line">....... 省略代码中。。。。</span><br><span class="line"></span><br><span class="line">price-thread-code-25 查询结束，结果是：{code=code-25, shopDataId=149193873, price=3000, isOk=true, name=小玩具}</span><br><span class="line">price-thread-code-2 查询结束，结果是：{code=code-2, shopDataId=324877405, price=3000, isOk=true, name=小玩具}</span><br><span class="line"></span><br><span class="line">.......共计1000次的查询结果</span><br><span class="line"></span><br><span class="line">结束测试,执行时长：150</span><br></pre></td></tr></tbody></table></figure>
+
+<ul>
+<li><strong>那么我们发现我们可以用<code>code</code>作为一个追踪<code>traceId</code>,然后使用</strong></li>
+</ul>
+<p><code>ScheduledExecutorService</code>,<code>CompletableFuture</code>,<code>LinkedBlockingQueue</code>等一些多线程技术，就可以实现这个请求合并，请求分发的简单实现demo.</p>
+<figure class="highlight text"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line">import javax.annotation.PostConstruct;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.HashMap;</span><br><span class="line">import java.util.List;</span><br><span class="line">import java.util.Map;</span><br><span class="line">import java.util.concurrent.*;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * 商品数据服务类</span><br><span class="line"> *</span><br><span class="line"> * @author lijing</span><br><span class="line"> */</span><br><span class="line">@Service</span><br><span class="line">public class ShopDataService {</span><br><span class="line"></span><br><span class="line">    class Request {</span><br><span class="line">        String shopDataId;</span><br><span class="line">        CompletableFuture&lt;Map&lt;String, Object&gt;&gt; completableFuture;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    // 集合，积攒请求，每N毫秒处理</span><br><span class="line">    LinkedBlockingQueue&lt;Request&gt; queue = new LinkedBlockingQueue&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    @PostConstruct</span><br><span class="line">    public void init() {</span><br><span class="line">        ScheduledExecutorService scheduledExecutorPool = Executors.newScheduledThreadPool(5);</span><br><span class="line">        scheduledExecutorPool.scheduleAtFixedRate(() -&gt; {</span><br><span class="line">            // TODO 取出所有queue的请求，生成一次批量查询</span><br><span class="line">            int size = queue.size();</span><br><span class="line">            if (size == 0) {</span><br><span class="line">                return;</span><br><span class="line">            }</span><br><span class="line">            System.out.println("此次合并了多少请求：" + size);</span><br><span class="line">            // 1、 取出</span><br><span class="line">            ArrayList&lt;Request&gt; requests = new ArrayList&lt;&gt;();</span><br><span class="line">            ArrayList&lt;String&gt; shopDataIds = new ArrayList&lt;&gt;();</span><br><span class="line">            for (int i = 0; i &lt; size; i++) {</span><br><span class="line">                Request request = queue.poll();</span><br><span class="line">                requests.add(request);</span><br><span class="line">                shopDataIds.add(request.shopDataId);</span><br><span class="line">            }</span><br><span class="line">            // 2、 组装一个批量查询 （不会比单次查询慢很多）</span><br><span class="line">            List&lt;Map&lt;String, Object&gt;&gt; mapList = queryServiceRemoteCall.queryShopDataInfoByCodeBatch(shopDataIds);</span><br><span class="line"></span><br><span class="line">            // 3、 分发响应结果，给每一个request用户请求 （多线程 之间的通信）</span><br><span class="line">            HashMap&lt;String, Map&lt;String, Object&gt;&gt; resultMap = new HashMap&lt;&gt;(); //  1000---- 007</span><br><span class="line">            for (Map&lt;String, Object&gt; map : mapList) {</span><br><span class="line">                String code = map.get("code").toString();</span><br><span class="line">                resultMap.put(code, map);</span><br><span class="line">            }</span><br><span class="line"></span><br><span class="line">            // 1000个请求</span><br><span class="line">            for (Request req : requests) { </span><br><span class="line">                Map&lt;String, Object&gt; result = resultMap.get(req.shopDataId);</span><br><span class="line">                // 怎么通知对应的1000多个线程，取结果呢？</span><br><span class="line">                req.completableFuture.complete(result);</span><br><span class="line">            }</span><br><span class="line">        }, 0, 10, TimeUnit.MILLISECONDS);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    @Autowired</span><br><span class="line">    QueryServiceRemoteCall queryServiceRemoteCall;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 1000 用户请求，1000个线程</span><br><span class="line">     *</span><br><span class="line">     * @param shopDataId</span><br><span class="line">     * @return</span><br><span class="line">     * @throws ExecutionException</span><br><span class="line">     * @throws InterruptedException</span><br><span class="line">     */</span><br><span class="line">    public Map&lt;String, Object&gt; queryData(String shopDataId) throws ExecutionException, InterruptedException {</span><br><span class="line">        Request request = new Request();</span><br><span class="line">        request.shopDataId = shopDataId;</span><br><span class="line">        CompletableFuture&lt;Map&lt;String, Object&gt;&gt; future = new CompletableFuture&lt;&gt;();</span><br><span class="line">        request.completableFuture = future;</span><br><span class="line">        queue.add(request);</span><br><span class="line">        // 等待其他线程通知拿结果</span><br><span class="line">        return future.get();</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<ul>
+<li><strong>测试结果</strong></li>
+</ul>
+<figure class="highlight text"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">开始测试</span><br><span class="line">结束测试,执行时长：164</span><br><span class="line"></span><br><span class="line">此次合并了多少请求：63</span><br><span class="line">此次合并了多少请求：227</span><br><span class="line">此次合并了多少请求：32</span><br><span class="line">此次合并了多少请求：298</span><br><span class="line">此次合并了多少请求：68</span><br><span class="line">此次合并了多少请求：261</span><br><span class="line">此次合并了多少请求：51</span><br><span class="line"></span><br><span class="line">price-thread-code-747 查询结束，结果是：{code=code-747, shopDataId=113980125, price=6000, isOk=true, name=棉花糖}</span><br><span class="line">price-thread-code-821 查询结束，结果是：{code=code-821, shopDataId=568038265, price=6000, isOk=true, name=棉花糖}</span><br><span class="line">price-thread-code-745 查询结束，结果是：{code=code-745, shopDataId=998247608, price=6000, isOk=true, name=棉花糖}</span><br><span class="line"></span><br><span class="line">....... 省略代码中。。。。</span><br><span class="line"></span><br><span class="line">price-thread-code-809 查询结束，结果是：{code=code-809, shopDataId=479029433, price=6000, isOk=true, name=棉花糖}</span><br><span class="line">price-thread-code-806 查询结束，结果是：{code=code-806, shopDataId=929748878, price=6000, isOk=true, name=棉花糖}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="四、总结"><a href="#四、总结" class="headerlink" title="四、总结"></a><strong>四、总结</strong></h2><p><strong>弊端：</strong> </p>
+<ul>
+<li>启用请求的成本是执行实际逻辑之前增加的延迟。</li>
+<li>如果平均仅需要5毫秒的执行时间，放在一个10毫秒的做一次批处理的合并场景下，则在最坏的情况下，执行时间可能会变为15毫秒。(一定不适合低延迟的RPC场景、一定不适合低并发场景)</li>
+</ul>
+<p><strong>场景:</strong></p>
+<ul>
+<li>如果很少有超过1或2个请求会并发在一起，则没有必要用。</li>
+<li>一个特定的查询同时被大量使用，并且可以将几+个甚至数百个批处理在一起，那么如果能接受处理时间变长一点点，用来减少网络连接欲，这是值得的。(典型如:数据库、Http接口）</li>
+</ul>
+<p><strong>扩展:</strong></p>
+<ul>
+<li>我们不重复造轮子，在SpringCloud的组件<code>spring-cloud-starter-netflix-hystrix</code>中已经有封装好的轮子<code>Hystrix</code>的<code>HystrixCollapser来实现请求的合并，以减少通信消耗和线程数的占用</code>。</li>
+<li>当然他的组件比较复杂，也更全面，支持异步，同步，超时，异常等的处理机制。</li>
+<li>但是，从底层思路来说，无非是线程之间的通信，线程的切换，队列等一些并发编程相关的技术，只要我们高度封装和抽象，那也可以手撸一个合并请求的框架处理。</li>
+</ul>
+</article>
+
+
+
+  <div class="article-share slide-up" id="share">
+    <div class="body">
+      <div class="social-wrap dis-select"><a class="social share-item qrcode ui-interactive is-icon-only" onclick="util.toggle(&quot;share-qrcode&quot;)" aria-label="分享文章: QR Code" title="分享文章: QR Code"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M10.553 13.447c-.424-.424-.95-.596-1.535-.675c-.553-.074-1.25-.074-2.086-.074H5.827c-.58 0-1.065 0-1.459.037c-.411.04-.795.124-1.146.34c-.345.21-.634.5-.845.844c-.216.352-.3.735-.34 1.147C2 15.459 2 15.944 2 16.525v.068c0 .884 0 1.597.055 2.17c.056.592.175 1.108.459 1.571c.288.47.682.864 1.152 1.152c.463.284.979.403 1.57.46C5.81 22 6.524 22 7.407 22h.07c.58 0 1.064 0 1.458-.037c.412-.04.795-.124 1.147-.34c.344-.21.633-.5.844-.844c.216-.352.3-.736.34-1.147c.037-.394.037-.879.037-1.46v-1.104c0-.836 0-1.533-.074-2.086c-.079-.584-.251-1.111-.675-1.535m-1.62-11.41c.412.04.795.124 1.147.34c.344.21.633.5.844.845c.216.351.3.735.34 1.146c.037.394.037.879.037 1.46v1.104c0 .836 0 1.533-.074 2.086c-.079.584-.251 1.111-.675 1.535s-.95.596-1.535.675c-.553.074-1.25.074-2.086.074H5.827c-.58 0-1.065 0-1.459-.037c-.411-.04-.795-.124-1.146-.34a2.56 2.56 0 0 1-.845-.844c-.216-.352-.3-.735-.34-1.147C2 8.54 2 8.056 2 7.475v-.068c0-.884 0-1.597.055-2.17c.056-.592.175-1.108.459-1.571c.288-.47.682-.864 1.152-1.152c.463-.284.979-.403 1.57-.46C5.81 2 6.524 2 7.407 2h.07c.58 0 1.064 0 1.458.037M16.593 2h-.068c-.58 0-1.065 0-1.46.037c-.41.04-.794.124-1.146.34c-.344.21-.633.5-.844.845c-.216.351-.3.735-.34 1.146c-.037.394-.037.879-.037 1.46v1.104c0 .836 0 1.533.074 2.086c.079.584.251 1.111.675 1.535s.95.596 1.535.675c.553.074 1.25.074 2.086.074h1.105c.58 0 1.065 0 1.459-.037c.411-.04.795-.124 1.146-.34c.345-.21.634-.5.845-.844c.216-.352.3-.735.34-1.147C22 8.54 22 8.056 22 7.475v-.068c0-.884 0-1.597-.055-2.17c-.056-.592-.175-1.108-.459-1.571a3.5 3.5 0 0 0-1.152-1.152c-.463-.284-.979-.403-1.57-.46C18.19 2 17.477 2 16.594 2" opacity=".5"></path><path fill="currentColor" d="M14.093 21.302a.698.698 0 1 1-1.396 0v-2.79h1.396z" opacity=".4"></path><path fill="currentColor" d="M21.302 12.698a.7.7 0 0 0-.697.697v3.256H22v-3.256a.7.7 0 0 0-.698-.697" opacity=".5"></path><path fill="currentColor" d="M16.076 16.617c-.076.184-.076.417-.076.883s0 .699.076.883a1 1 0 0 0 .541.54c.184.077.417.077.883.077s.699 0 .883-.076a1 1 0 0 0 .54-.541c.077-.184.077-.417.077-.883s0-.699-.076-.883a1 1 0 0 0-.541-.54C18.199 16 17.966 16 17.5 16s-.699 0-.883.076a1 1 0 0 0-.54.541"></path><path fill="currentColor" d="M22 18.535v-.023h-1.396c0 .443 0 .74-.016.97c-.015.224-.043.333-.073.405a1.16 1.16 0 0 1-.629.63c-.072.029-.18.056-.405.072c-.23.015-.527.016-.97.016h-1.86V22h1.883c.414 0 .759 0 1.042-.02a2.6 2.6 0 0 0 .844-.175a2.56 2.56 0 0 0 1.384-1.384c.112-.27.156-.549.176-.844c.02-.283.02-.628.02-1.042" opacity=".7"></path><path fill="currentColor" d="M12.697 16.616v.035h1.396c0-.668 0-1.116.035-1.458c.034-.33.093-.482.16-.583a1.2 1.2 0 0 1 .321-.32c.101-.068.254-.128.584-.161c.342-.035.79-.036 1.458-.036h1.86v-1.395h-1.896c-.623 0-1.142 0-1.563.043c-.44.044-.85.142-1.218.388c-.28.187-.519.426-.706.706c-.246.368-.343.777-.388 1.217c-.043.421-.043.94-.043 1.564" opacity=".6"></path><path fill="currentColor" d="M5.508 18.69c.219.155.528.155 1.146.155c.619 0 .928 0 1.146-.155a.8.8 0 0 0 .2-.199c.154-.218.154-.527.154-1.146s0-.927-.155-1.146A.8.8 0 0 0 7.8 16c-.218-.155-.527-.155-1.146-.155s-.927 0-1.146.155a.8.8 0 0 0-.199.2c-.155.218-.155.527-.155 1.145c0 .619 0 .928.155 1.146a.8.8 0 0 0 .2.2M6.654 8.155c-.618 0-.927 0-1.146-.155a.8.8 0 0 1-.199-.2c-.155-.217-.155-.527-.155-1.145c0-.619 0-.928.155-1.146a.8.8 0 0 1 .2-.2c.218-.154.527-.154 1.145-.154c.619 0 .928 0 1.146.155a.8.8 0 0 1 .2.199c.154.218.154.527.154 1.146s0 .928-.155 1.146A.8.8 0 0 1 7.8 8c-.218.155-.527.155-1.146.155M16.2 8c.218.155.527.155 1.146.155s.927 0 1.146-.155a.8.8 0 0 0 .199-.199c.155-.218.155-.528.155-1.146c0-.619 0-.928-.155-1.146a.8.8 0 0 0-.2-.2c-.218-.154-.527-.154-1.145-.154c-.619 0-.928 0-1.146.155a.8.8 0 0 0-.2.199c-.154.218-.154.527-.154 1.146s0 .928.155 1.146A.8.8 0 0 0 16.2 8"></path></svg></span></a><a class="social share-item weibo ui-interactive is-icon-only" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2F%25E7%2594%25A8%25E6%2589%258B%25E5%2586%2599%25E4%25B8%2580%25E4%25B8%25AA%25E8%25AF%25B7%25E6%25B1%2582%25E5%2590%2588%25E5%25B9%25B6%2F&amp;title=%E7%94%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;summary=%E6%8E%A8%E8%8D%90%E9%98%85%E8%AF%BB%EF%BC%9A%20%0A%E4%B8%80%E3%80%81%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%B4%A9%E6%BA%83%E7%9A%84%E6%80%9D%E8%80%83%E8%80%81%E6%9D%BF%E8%AF%B4%EF%BC%8C%E4%BB%96%E8%A6%81%E5%81%9A%E4%B8%AA%E7%8E%B0%E5%9C%BA%E8%90%A5%E9%94%80%E6%B4%BB%E5%8A%A8%EF%BC%8C%E7%BA%BF%E4%B8%8A%E7%BA%BF%E4%B8%8B%E9%83%BD%E8%A6%81%E5%8F%82%E4%B8%8E%E6%8E%A8%E5%B9%BF%EF%BC%8C%E8%BF%99%E4%B8%AA%E6%B4%BB%E5%8A%A8%E5%8F%82%E4%B8%8E%E4%BA%BA%E6%95%B0%E5%8F%AF%E8%83%BD%E5%BE%88%E5%A4%A7%E5%93%A6%C2%B7%C2%B7%C2%B7%20%E6%9E%9C%E7%84%B6%EF%BC%8C%E7%94%B1%E4%BA%8E%E4%B8%8D%E6%98%AF%E6%88%91%E5%86%99%E7%9A%84%E4%BB%A3%E7%A0%81%EF%BC%8C%E6%89%80%E4%BB%A5%E9%82%A3%E5%A4%A9%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%B0%B1%E5%B4%A9%E4%BA%86%EF%BC%8C%E5%B4%A9%E7%9A%84%E6%97%B6%E5%80%99%E5%BE%88%E5%AE%89%E9%9D%99%EF%BC%8C%E5%86%99%E4%BB%A3%E7%A0%81%E7%9A%84%E9%82%A3%E4%B8%AA%E4%BA%BA%E4%B8%80%E4%B8%AA%E4%BA%BA%E8%B5%B0%E7%9A%84%EF%BC%8C%E8%B5%B0%E7%9A%84%E6%97%B6%E5%80%99%E5%BE%88%E5%AE%89%E8%AF%A6%E3%80%82%E5%BD%93%E8%AF%B7%E6%B1%82%E9%87%8F..." target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Weibo" title="分享文章: Weibo"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.737 5.439l-.002.004zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.18.601l.014-.028zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.57-.18-.405-.615.375-.977.42-1.804 0-2.404-.781-1.112-2.915-1.053-5.364-.03 0 0-.766.331-.571-.271.376-1.217.315-2.224-.27-2.809-1.338-1.337-4.869.045-7.888 3.08C1.309 10.87 0 13.273 0 15.348c0 3.981 5.099 6.395 10.086 6.395 6.536 0 10.888-3.801 10.888-6.82 0-1.822-1.547-2.854-2.915-3.284v.01zm1.908-5.092c-.766-.856-1.908-1.187-2.96-.962-.436.09-.706.511-.616.932.09.42.511.691.932.602.511-.105 1.067.044 1.442.465.376.421.466.977.316 1.473-.136.406.089.856.51.992.405.119.857-.105.992-.512.33-1.021.12-2.178-.646-3.035l.03.045zm2.418-2.195c-1.576-1.757-3.905-2.419-6.054-1.968-.496.104-.812.587-.706 1.081.104.496.586.813 1.082.707 1.532-.331 3.185.15 4.296 1.383 1.112 1.246 1.429 2.943.947 4.416-.165.48.106 1.007.586 1.157.479.165.991-.104 1.157-.586.675-2.088.241-4.478-1.338-6.235l.03.045z"></path></svg></span></a><a class="social share-item x ui-interactive is-icon-only" href="https://x.com/intent/tweet?text=%E7%94%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2F%25E7%2594%25A8%25E6%2589%258B%25E5%2586%2599%25E4%25B8%2580%25E4%25B8%25AA%25E8%25AF%25B7%25E6%25B1%2582%25E5%2590%2588%25E5%25B9%25B6%2F" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: X" title="分享文章: X"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M14.234 10.162L22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299l-.929-1.329L3.076 1.56h3.182l5.965 8.532l.929 1.329l7.754 11.09h-3.182z"></path></svg></span></a><a class="social share-item telegram ui-interactive is-icon-only" href="https://t.me/share/url?url=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2F%25E7%2594%25A8%25E6%2589%258B%25E5%2586%2599%25E4%25B8%2580%25E4%25B8%25AA%25E8%25AF%25B7%25E6%25B1%2582%25E5%2590%2588%25E5%25B9%25B6%2F&amp;text=%E7%94%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0" target="_blank" rel="external nofollow noopener noreferrer" aria-label="分享文章: Telegram" title="分享文章: Telegram"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Simple Icons - https://creativecommons.org/publicdomain/zero/1.0/ --><path fill="currentColor" d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12a12 12 0 0 0 12-12A12 12 0 0 0 12 0zm4.962 7.224c.1-.002.321.023.465.14a.5.5 0 0 1 .171.325c.016.093.036.306.02.472c-.18 1.898-.962 6.502-1.36 8.627c-.168.9-.499 1.201-.82 1.23c-.696.065-1.225-.46-1.9-.902c-1.056-.693-1.653-1.124-2.678-1.8c-1.185-.78-.417-1.21.258-1.91c.177-.184 3.247-2.977 3.307-3.23c.007-.032.014-.15-.056-.212s-.174-.041-.249-.024q-.159.037-5.061 3.345q-.72.495-1.302.48c-.428-.008-1.252-.241-1.865-.44c-.752-.245-1.349-.374-1.297-.789q.04-.324.893-.663q5.247-2.286 6.998-3.014c3.332-1.386 4.025-1.627 4.476-1.635"></path></svg></span></a><a class="social share-item email ui-interactive is-icon-only" href="mailto:?subject=%E7%94%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6%20-%20%E4%B8%AA%E4%BA%BA%E7%AC%94%E8%AE%B0&amp;body=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2F%25E7%2594%25A8%25E6%2589%258B%25E5%2586%2599%25E4%25B8%2580%25E4%25B8%25AA%25E8%25AF%25B7%25E6%25B1%2582%25E5%2590%2588%25E5%25B9%25B6%2F" aria-label="分享文章: Email" title="分享文章: Email"><span class="share-item__icon ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" fill-rule="evenodd" d="M3.172 5.172C2 6.343 2 8.229 2 12s0 5.657 1.172 6.828C4.343 20 6.229 20 10 20h4c3.771 0 5.657 0 6.828-1.172C22 17.657 22 15.771 22 12s0-5.657-1.172-6.828C19.657 4 17.771 4 14 4h-4C6.229 4 4.343 4 3.172 5.172m15.404 2.348a.75.75 0 0 1-.096 1.056l-2.196 1.83c-.887.739-1.605 1.338-2.24 1.746-.66.424-1.303.693-2.044.693s-1.384-.269-2.045-.693c-.634-.408-1.352-1.007-2.239-1.745L5.52 8.576a.75.75 0 1 1 .96-1.152l2.159 1.799c.933.777 1.58 1.315 2.128 1.667.529.34.888.455 1.233.455s.704-.115 1.233-.455c.547-.352 1.195-.89 2.128-1.667l2.159-1.8a.75.75 0 0 1 1.056.097" clip-rule="evenodd"></path></svg></span></a></div>
+      <div class="share-qrcode" id="share-qrcode" style="opacity:0;height:0"><img class="lazy" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAADa6r/EAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=" data-src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&amp;data=https%3A%2F%2Fcodearea.cc%2Fpost%2FJAVA%2F%25E7%2594%25A8%25E6%2589%258B%25E5%2586%2599%25E4%25B8%2580%25E4%25B8%25AA%25E8%25AF%25B7%25E6%25B1%2582%25E5%2590%2588%25E5%25B9%25B6%2F" onerror="this.onerror=null;this.src=&quot;/images/stellar-error.491ee870f4940739.svg&quot;"></div>
+    </div>
+  </div>
+
+
+
+<div class="related-wrap slide-up" id="read-next"><section class="body"><div class="item" id="prev"><div class="note"><svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-left" aria-hidden="true"></svg> 较新文章</div><a href="/post/MIDDLEWARE/influxdb%E5%86%85%E5%AD%98%E6%B6%88%E8%80%97%E5%88%86%E6%9E%90%E5%8F%8A%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/">influxdb内存消耗分析及性能优化</a></div><div class="item" id="next"><div class="note">较早文章 <svg class="icon" viewBox="0 0 1 1" data-icon="default:arrow-right" aria-hidden="true"></svg></div><a href="/post/JAVA/Spring%20RestTemplate%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97/">Spring RestTemplate使用指南</a></div></section></div>
+
+
+
+
+
+
+<footer class="page-footer slide-up footnote"><hr><div class="text"><p>本站由 <a href="/">dandeliono</a> 使用 <a target="_blank" rel="noopener" href="https://github.com/xaoxuu/hexo-theme-stellar/tree/2.0.0">Stellar 2.0.0</a> 主题创建。<br>文章多为学习与工作中的笔记和转载整理,版权归原作者所有。</p>
+</div></footer>
+</main>
+<aside data-stellar-runtime-region="" id="rightbar-region" class="site-region site-region--rightbar" data-region="rightbar" aria-label="Rightbar"><div class="site-region__surface ui-drawer-surface"><div class="site-region__viewport"><div class="widgets widget-stack widget-stack--rightbar widget-stack--rightbar"><div class="widget-instance widget-instance--toc" data-widget-id="rightbar:0:toc" data-presentation="rightbar">
+
+
+<widget class="widget-wrapper slide-up toc" id="data-toc" collapse="false">
+  
+    <div class="widget-header dis-select">
+      <span class="name">本文目录</span>
+      <button type="button" class="cap-action ui-interactive card-hover card-hover--spotlight" data-shell-action="toggle-toc" aria-label="Toggle table of contents" aria-pressed="false"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg></span></button>
+    </div>
+  
+  <div class="widget-body"><ol class="toc ui-collection-adapter"><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E4%B8%80%E3%80%81%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%B4%A9%E6%BA%83%E7%9A%84%E6%80%9D%E8%80%83"><span class="toc-text">一、服务器崩溃的思考</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E4%BA%8C%E3%80%81%E6%9C%89%E4%BA%BA%E6%83%B3%E7%9C%8B%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6%EF%BC%8C%E4%BB%8A%E5%A4%A9%E5%A5%B9%E6%9D%A5%E4%BA%86"><span class="toc-text">二、有人想看请求合并，今天她来了</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E4%B8%89%E3%80%81%E5%BC%80%E5%A7%8B%E6%BC%94%E7%BB%83"><span class="toc-text">三、开始演练</span></a></li><li class="toc-item toc-level-2"><a class="toc-link ui-interactive" href="#%E5%9B%9B%E3%80%81%E6%80%BB%E7%BB%93"><span class="toc-text">四、总结</span></a></li></ol></div>
+  <div class="widget-footer"><a class="top ui-interactive" onclick="util.scrollTop()"><span class="ui-icon"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Icon from Solar by 480 Design - https://creativecommons.org/licenses/by/4.0/ --><path fill="currentColor" d="M20.536 3.464C22 4.93 22 7.286 22 12s0 7.071-1.465 8.535C19.072 22 16.714 22 12 22s-7.071 0-8.536-1.465C2 19.072 2 16.714 2 12s0-7.071 1.464-8.536C4.93 2 7.286 2 12 2s7.071 0 8.535 1.464" opacity=".5"></path><path fill="currentColor" d="M9.53 12.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 9.56z"></path><path fill="currentColor" d="M9.53 16.03a.75.75 0 0 1-1.06-1.06l3-3a.75.75 0 0 1 1.06 0l3 3a.75.75 0 1 1-1.06 1.06L12 13.56z"></path></svg></span><span>回到顶部</span></a></div>
+</widget>
+
+
+</div></div></div></div></aside>
+</div><button type="button" class="site-scrim" data-shell-action="dismiss-drawer" aria-label="Close navigation" tabindex="-1"></button><div data-stellar-runtime-region="" class="site-dock" role="group" aria-label="Layout panels">
+  <button type="button" class="site-dock__button site-dock__button--rightbar ui-interactive" aria-label="Open rightbar" aria-controls="rightbar-region" aria-expanded="false" data-shell-action="toggle-rightbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6h11m-11 6h11m-11 6h11M4 6h1v4m-1 0h2m0 8H4c0-1 2-2 2-3s-1-1.5-2-1"></path></svg>
+  </button>
+  <button type="button" class="site-dock__button site-dock__button--leftbar ui-interactive" aria-label="Open leftbar" aria-controls="leftbar-region" aria-expanded="false" data-shell-action="toggle-leftbar-drawer">
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11c0-3.771 0-5.657 1.172-6.828C4.343 3 6.229 3 10 3h4c3.771 0 5.657 0 6.828 1.172C22 5.343 22 7.229 22 11v2c0 3.771 0 5.657-1.172 6.828C19.657 21 17.771 21 14 21h-4c-3.771 0-5.657 0-6.828-1.172C2 18.657 2 16.771 2 13z"></path><path id="sep" stroke-linecap="round" d="M5.5 10h6m-5 4h4m4.5 7V3"></path></g></svg>
+  </button>
+</div>
+
+<dialog data-stellar-runtime-region="" class="search-dialog" id="site-search-dialog" aria-labelledby="site-search-title">
+  <div class="search-dialog__panel search-wrapper" id="site-search-wrapper" searching="false">
+    <div class="search-dialog__header">
+      <div class="search-form" role="search">
+        <span class="search-button" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><!-- Adapted from Google Material Icons by Material Design Authors - https://github.com/material-icons/material-icons/blob/master/LICENSE --><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h3M3 13h3M3 18h8M16.83 13.83l3.76 3.76"></path><circle cx="14" cy="11" r="4"></circle></g></svg></span>
+        <input type="search" class="search-input" id="site-search-input" aria-labelledby="site-search-title" placeholder="搜索">
+      </div>
+      <button type="button" class="search-dialog__close" data-shell-action="close-search" aria-label="关闭搜索">×</button>
+    </div>
+    
+      <div class="search-dialog__scope" role="radiogroup" aria-labelledby="site-search-title" hidden="">
+        <label class="search-dialog__scope-option" data-search-scope-option="all">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="all">
+          <span>全站</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="blog" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="blog">
+          <span>博客</span>
+        </label>
+        <label class="search-dialog__scope-option" data-search-scope-option="current" hidden="">
+          <input class="ui-radio" type="radio" name="site-search-scope" value="current">
+          <span data-search-scope-current-label=""></span>
+        </label>
+      </div>
+    
+    <h2 class="search-dialog__title" id="site-search-title">站内搜索</h2>
+    <div class="search-result" id="site-search-result"></div>
+    <div class="search-no-result">没有找到内容！</div>
+  </div>
+</dialog>
+</div><div class="site-scripts">
+<script data-stellar-script="core" src="/js/stellar-icons.js?v=b068c3800a3fa93b"></script>
+
+<script data-stellar-script="defines">
+  window.canonical = window.stellarClientData.canonical;
+  const ctx = window.stellarClientData.ctx;
+  window.canonical.param = {permalink: "https://codearea.cc/post/JAVA/%E7%94%A8%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%AF%B7%E6%B1%82%E5%90%88%E5%B9%B6/", checklink: ctx.services.video.js};
+  ctx.date_suffix = {"just":"刚刚","min":"分钟前","hour":"小时前","day":"天前"};
+  if (ctx.search) Object.assign(ctx.search, {"more":"更多","no_more":"没有更多了"});
+  const def = window.stellarClientData.def;
+  window.ctx = ctx;
+  window.def = def;
+</script>
+
+
+<!-- core: 迁移期 DOM/资源兼容工具；Extension 注册与生命周期由 ESM runtime 所有 -->
+<script data-stellar-script="core" src="/js/utils.js?v=2.0.0"></script>
+<script data-stellar-script="core" src="/js/main.js?v=2.0.0" defer=""></script>
+<script data-stellar-script="core" defer="" src="/js/profile.js?v=2.0.0"></script>
+
+
+
+
+
+<script data-stellar-script="core" type="application/json" id="stellar-runtime-config">{"version":1,"root":"/","policy":{"cache":{"enabled":true,"defaultTtl":3600,"ttl":{"giscus":600,"waline":600,"artalk":600,"memos":600,"memos-user":86400,"sites":86400,"friends":86400,"friends_and_posts":86400,"siteinfo":86400},"maxEntries":200},"request":{"retries":2,"timeoutMs":5000,"idleTimeoutMs":3000,"maxCacheEntryBytes":204800},"features":{"codeCopyToastMs":2500},"providers":{"linkPrefetch":"flying_pages","lightbox":"fancybox","diagrams":"mermaid"}},"extensions":[{"id":"pin-slider","module":"/js/runtime/extensions/pin-slider.js","scope":"region","when":{"selector":".pin-slider"},"config":{}},{"id":"page-controls","module":"/js/runtime/extensions/page-controls.js","scope":"region","when":{"always":true},"config":{"highlight":"/js/search/highlight.js","tagtree":"/js/tagtree.js"}},{"id":"partial-navigation","module":"/js/runtime/extensions/partial-navigation.js","scope":"document","when":{"always":true},"config":{}},{"id":"color-scheme-switch","module":"/js/runtime/extensions/color-scheme-switch.js","scope":"document","when":{"always":true},"config":{"messages":{"light":"切换到浅色模式","dark":"切换到深色模式","auto":"切换到跟随系统配色"}}},{"id":"search","module":"/js/runtime/extensions/search.js","scope":"document","when":{"selector":".search-input"},"config":{"provider":"local","options":{"scope":"post","includeContent":true,"cacheTtlSeconds":86400},"assets":{"client":null,"provider":"/js/search/local-search.js","shortcut":"/js/search/shortcut.js"}}},{"id":"hero-parallax","module":"/js/runtime/extensions/hero-parallax.js","scope":"region","when":{"selector":".wiki-hero"},"config":{}},{"id":"hero-effect","module":"/js/runtime/extensions/hero-effect.js","scope":"region","when":{"selector":"canvas[data-hero-effect]"},"config":{}},{"id":"lazy-loading","module":"/js/runtime/extensions/lazy-loading.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/vanilla-lazyload@19.1/dist/lazyload.min.js"}},{"id":"deferred-icons","module":"/js/runtime/extensions/deferred-icons.js","scope":"region","when":{"selector":"svg.icon[data-icon]"},"config":{}},{"id":"dropdown","module":"/js/runtime/extensions/dropdown.js","scope":"region","when":{"selector":"details.dropdown"},"config":{}},{"id":"services","module":"/js/runtime/extensions/services.js","scope":"region","when":{"selector":"#artalk_container, #twikoo_container, #waline_container, .data-service, [class*='ds-'], a[cardlink], a[data-md-link][data-siteinfo-api], .site-card [data-siteinfo-api], .voice\u003eaudio, .video\u003evideo, .chat-file"},"config":{"marked":"https://gcore.jsdelivr.net/npm/marked@13.0/lib/marked.umd.min.js"}},{"id":"settings","module":"/js/runtime/extensions/settings.js","scope":"region","when":{"selector":".settings-page"},"config":{}},{"id":"link-prefetch","module":"/js/runtime/extensions/link-prefetch.js","scope":"document","when":{"always":true},"config":{"asset":"https://gcore.jsdelivr.net/npm/flying-pages@2/flying-pages.min.js"}},{"id":"lightbox","module":"/js/runtime/extensions/lightbox.js","scope":"region","when":{"selector":"[data-fancybox]:not(.error), .with-fancybox, .ds-memos, .timenode p\u003eimg"},"config":{"enabled":true,"selector":".timenode p\u003eimg","assets":{"localCss":"/css/plugins/fancybox.css","js":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js","css":"https://gcore.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css"}}},{"id":"reveal","module":"/js/runtime/extensions/reveal.js","scope":"region","when":{"selector":".slide-up"},"config":{"enabled":true,"duration":800,"interval":200,"distance":8,"blur":4}},{"id":"code-copy","module":"/js/runtime/extensions/code-copy.js","scope":"region","when":{"selector":".code"},"config":{"assets":{"js":"/js/plugins/copycode.js"},"messages":{"label":"复制","copied":"复制成功","denied":"未获得剪贴板权限","unsupported":"当前浏览器不支持剪贴板或页面不是 HTTPS"}}},{"id":"adaptive-text","module":"/js/runtime/extensions/adaptive-text.js","scope":"region","when":{"selector":"[data-text-adaptive]"},"config":{"assets":{"colorJs":"/js/color.js","js":"/js/plugins/adaptive-text.js"}}},{"id":"swiper","module":"/js/runtime/extensions/swiper.js","scope":"region","when":{"selector":"#swiper-api"},"config":{"assets":{"localCss":"/css/plugins/swiper.css","js":"https://unpkg.com/swiper@10.3/swiper-bundle.min.js","css":"https://unpkg.com/swiper@10.3/swiper-bundle.min.css"}}}]}</script>
+<script data-stellar-script="core" type="module" src="/js/runtime/index.js?v=2.0.0&amp;runtime=1"></script>
+
+
+<!-- inject -->
+
+
+<script data-stellar-script="core" defer="" src="/js/navigation-init.js?v=2.0.0"></script>
+</div>
+
+</body></html>
